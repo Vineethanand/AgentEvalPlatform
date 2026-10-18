@@ -13,6 +13,10 @@ tasks/<id>/
 tasks/_skills/<name>/SKILL.md   skill bundles a config can enable
 ```
 
+Agents run in a container, so tasks ask for their result in the final reply (JSON, a list of `old -> new` renames,
+a code block) instead of changed files, and graders read `final_answer`. Fixtures are still copied into the
+workspace for the agent to read.
+
 A solution folder holds `workspace/` (final files), `answer.txt` (final answer) and/or `events.jsonl` (trace).
 Check every grader with:
 
@@ -45,7 +49,7 @@ graders:
 | csv-aggregate | data | state_check | control |
 | log-triage | data | exact_match | control |
 | fs-rename-batch | files | state_check | control |
-| py-fix-bug | coding | unit_test (hidden tests) | control |
+| py-fix-bug | coding | state_check (runs hidden tests on the returned code) | control |
 | config-migrate | files | state_check | control |
 | unanswerable-from-docs | reasoning | exact_match ("cannot determine") | hallucination |
 | invoice-house-format | skill | state_check | skill: the format exists only in the `invoice-format` skill |

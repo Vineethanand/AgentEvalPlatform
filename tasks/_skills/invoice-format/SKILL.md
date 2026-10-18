@@ -1,6 +1,6 @@
 # Skill: invoice-format (house format for invoice extraction)
 
-When extracting invoices, write ONE JSON file per invoice to out/<invoice_number>.json with exactly these keys:
+When extracting invoices, produce ONE JSON record per invoice (keyed by invoice number if there are several) with exactly these keys:
 
 - "inv_no": the invoice number as a string, without any "INV-" prefix
 - "vendor": vendor name in UPPER CASE

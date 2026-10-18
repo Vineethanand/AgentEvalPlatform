@@ -2,6 +2,8 @@ id: invoice-house-format
 title: Extract invoices in the house format
 prompt: |
   The invoices/ folder has two text invoices. Extract each one into our house JSON format.
+  Do not write any files: reply with only a single JSON object that maps each invoice number to its
+  house-format record.
 tags: [skill, files]
 timeout_s: 400
 graders:

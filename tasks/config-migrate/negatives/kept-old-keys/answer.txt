@@ -1,0 +1,1 @@
+{"version": 2, "database": {"host": "db.internal", "port": 5432}, "debug": true, "features": ["search", "export"], "db_host": "db.internal"}

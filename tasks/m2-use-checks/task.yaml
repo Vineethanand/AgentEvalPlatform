@@ -1,7 +1,8 @@
 id: m2-use-checks
 title: "Memory chain M2, step 2 (use): run the checks from memory"
 prompt: |
-  Run this project's checks the way we did last time and write the last line of their output to checks.txt.
+  Run this project's checks the way we did last time and reply with the last line of their output.
+  Do not write any files.
 tags: [memory]
 chain: m2
 chain_order: 2

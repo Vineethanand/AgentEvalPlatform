@@ -1,14 +1,13 @@
 id: postmortem-from-logs
 title: Write a short postmortem from logs
 prompt: |
-  incident.log has the server logs from last night's outage. Write postmortem.md (under 300 words)
-  with sections Summary, Timeline, Root cause and Actions.
+  incident.log has the server logs from last night's outage. Reply with a postmortem (under 300 words)
+  with sections Summary, Timeline, Root cause and Actions. Do not write any files.
 tags: [writing, control]
 timeout_s: 400
 graders:
   - type: llm_judge
     primary: true
-    files: [postmortem.md]
     rubric:
       - id: times
         text: States the outage start (02:10 UTC) and end (02:45 UTC) consistent with the logs.

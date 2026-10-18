@@ -1,4 +1,4 @@
 def check(workspace, final_answer):
-    f = workspace / "checks.txt"
-    text = f.read_text().strip() if f.exists() else ""
-    return [{"name": "checks.txt has the passing line", "passed": text.endswith("ALL CHECKS PASSED ci-7"), "detail": text[:200]}]
+    lines = [x.strip() for x in (final_answer or "").strip().splitlines() if x.strip()]
+    last = lines[-1] if lines else ""
+    return [{"name": "answer is the passing line", "passed": "ALL CHECKS PASSED ci-7" in last, "detail": last[:200]}]

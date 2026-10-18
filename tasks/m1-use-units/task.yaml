@@ -1,8 +1,8 @@
 id: m1-use-units
 title: "Memory chain M1, step 2 (use): apply the remembered preference"
 prompt: |
-  trips.csv has this week's delivery trips with distances in miles. Write summary.txt with one line:
-  the total distance for the week, in my preferred format.
+  trips.csv has this week's delivery trips with distances in miles. Reply with one line: the total
+  distance for the week, in my preferred format. Do not write any files.
 tags: [memory]
 chain: m1
 chain_order: 2

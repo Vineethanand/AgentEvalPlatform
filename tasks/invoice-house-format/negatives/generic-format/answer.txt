@@ -1,0 +1,1 @@
+{"1042": {"invoice_number": "INV-1042", "vendor": "Blue River Supplies", "date": "03/03/2025", "total": 1234.5}, "1043": {"inv_no": "1043", "vendor": "KITE & CO", "date": "2025-04-17", "total_cents": 8900, "currency": "EUR"}}
