@@ -16,7 +16,7 @@ table { width: 100%; border-collapse: collapse; font-size: 14px; }
 th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
 th { color: var(--muted); font-weight: 600; }
 .muted { color: var(--muted); }
-.good { color: var(--good); } .bad { color: var(--bad); } .warn { color: var(--warn); }
+.good { color: var(--good); } .bad { color: var(--bad); } .warn { color: var(--warn); } .running { color: var(--warn); font-weight: 600; }
 .banner { font-size: 20px; font-weight: 600; padding: 16px; border-radius: 8px; margin-bottom: 16px; border: 1px solid var(--line); }
 .banner.b { background: color-mix(in srgb, var(--good) 12%, transparent); }
 .banner.a { background: color-mix(in srgb, var(--accent) 12%, transparent); }
@@ -36,3 +36,6 @@ label { display: block; margin: 10px 0 4px; font-weight: 600; font-size: 14px; }
 .event.memory_read, .event.memory_write { border-color: var(--good); }
 .event.harness_note { border-color: var(--bad); }
 pre { white-space: pre-wrap; word-break: break-word; font-size: 12px; margin: 4px 0; max-height: 300px; overflow: auto; }
+
+button.danger { background: var(--bad); color: #fff; border-color: var(--bad); }
+button:disabled { opacity: .5; cursor: default; }

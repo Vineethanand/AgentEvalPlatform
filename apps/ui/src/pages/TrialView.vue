@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { api, usd } from '../api';
 
 const props = defineProps<{ id: string }>();
@@ -12,7 +12,21 @@ async function load() {
   open.value = {};
 }
 watch(() => props.id, load);
-onMounted(load);
+
+// A trial that hasn't finished has no verdict yet: show it as in progress, not as a failure.
+const pending = computed(() => ['queued', 'running'].includes(data.value?.trial.status));
+const verdict = (t: any) => (['queued', 'running'].includes(t.status) ? 'pending' : t.passed ? 'good' : 'bad');
+let timer: number | undefined;
+onMounted(() => {
+  load();
+  timer = window.setInterval(async () => {
+    if (!pending.value) return;
+    const open0 = open.value;
+    await load();
+    open.value = open0;
+  }, 3000);
+});
+onUnmounted(() => clearInterval(timer));
 
 const summary = (e: any) => {
   const p = e.payload ?? {};
@@ -34,23 +48,27 @@ const summary = (e: any) => {
     <h1>{{ data.trial.taskId }} · trial {{ data.trial.trialIndex }}</h1>
     <p>
       <RouterLink :to="`/experiments/${data.trial.experimentId}`">← back to experiment</RouterLink>
-      <span v-for="p in pair" :key="p.id"> · <RouterLink :to="`/trials/${p.id}`">same task & trial index, other config ({{ p.passed ? 'pass' : 'fail' }})</RouterLink></span>
+      <span v-for="p in pair" :key="p.id"> · <RouterLink :to="`/trials/${p.id}`">same task & trial index, other config ({{ ['queued', 'running'].includes(p.status) ? p.status : p.passed ? 'pass' : 'fail' }})</RouterLink></span>
     </p>
 
     <div class="panel">
       <table>
         <tr><th>Config</th><td>{{ data.configVersion.harness }} · {{ data.configVersion.modelAlias }} · memory {{ data.configVersion.settings.memory?.mode }} (v{{ data.configVersion.version }})</td></tr>
-        <tr><th>Result</th><td :class="data.trial.passed ? 'good' : 'bad'">{{ data.trial.status }} · {{ data.trial.passed ? 'PASS' : 'FAIL' }} · stop: {{ data.trial.stopReason }}
-          <span v-if="data.trial.failureCategory"> · failure: {{ data.trial.failureCategory }}</span></td></tr>
+        <tr><th>Result</th>
+          <td v-if="pending" class="running">{{ data.trial.status }} · in progress
+            <span class="muted"> · no result yet</span></td>
+          <td v-else :class="data.trial.passed ? 'good' : 'bad'">{{ data.trial.status }} · {{ data.trial.passed ? 'PASS' : 'FAIL' }} · stop: {{ data.trial.stopReason }}
+            <span v-if="data.trial.failureCategory"> · failure: {{ data.trial.failureCategory }}</span></td></tr>
         <tr><th>Cost</th><td>{{ usd(data.trial.costUsd) }} · {{ data.trial.tokensIn }} in / {{ data.trial.tokensOut }} out tokens · {{ data.trial.steps }} steps · {{ (data.trial.latencyMs / 1000).toFixed(1) }} s</td></tr>
         <tr><th>Seed / attempt</th><td>{{ data.trial.seed }} / {{ data.trial.attempt }}</td></tr>
         <tr v-if="data.trial.error"><th>Error</th><td><pre>{{ data.trial.error }}</pre></td></tr>
-        <tr><th>Final answer</th><td><pre>{{ data.trial.finalAnswer }}</pre></td></tr>
+        <tr><th>Final answer</th><td :class="{ muted: pending }"><pre>{{ data.trial.finalAnswer ?? (pending ? 'not available yet' : '') }}</pre></td></tr>
       </table>
     </div>
 
     <div class="panel">
       <h3>Grades</h3>
+      <p v-if="pending && !data.grades.length" class="muted">Not graded yet: grading starts when the trial finishes.</p>
       <div v-for="g in data.grades" :key="g.id" style="margin-bottom: 10px">
         <strong>{{ g.grader }}{{ g.primary ? ' (primary)' : '' }}</strong>:
         <span :class="g.passed ? 'good' : 'bad'">{{ g.passed ? 'pass' : 'fail' }}</span> · score {{ g.score.toFixed(2) }}

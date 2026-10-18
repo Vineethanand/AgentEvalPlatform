@@ -37,6 +37,14 @@ export class QueueService implements OnModuleDestroy {
     })));
   }
 
+  /** Drop this experiment's jobs that no worker has picked up yet. Returns how many were removed. */
+  async clear(experimentId: string) {
+    const jobs = await this.queue.getJobs(['waiting', 'delayed', 'prioritized', 'paused'], 0, -1);
+    const mine = jobs.filter((j) => j.data.experimentId === experimentId);
+    await Promise.all(mine.map((j) => j.remove().catch(() => undefined)));
+    return mine.length;
+  }
+
   async onModuleDestroy() {
     await this.queue.close();
     this.conn.disconnect();
@@ -130,13 +138,13 @@ export class ExperimentsService {
     return jobs.map((j) => j.job);
   }
 
-  /** Re-queue only failed or stuck cells (a failed trial in a chain re-runs its whole chain). */
+  /** Re-queue only failed, stopped or stuck cells (a failed trial in a chain re-runs its whole chain). */
   async resume(id: string) {
     const exp = await this.get(id);
     const all = await this.trials.find({ where: { experimentId: id } });
     const tvs = await this.taskVersions.find({ where: { id: In(exp.taskVersionIds) } });
     const specOf = new Map(tvs.map((t) => [t.id, t.spec]));
-    const bad = all.filter((t) => ['infra_error', 'harness_error', 'running', 'queued'].includes(t.status));
+    const bad = all.filter((t) => ['infra_error', 'harness_error', 'running', 'queued', 'cancelled'].includes(t.status));
     const toRun = all.filter((t) => {
       const chain = specOf.get(t.taskVersionId)?.chain;
       if (!chain) return bad.includes(t);
@@ -149,10 +157,14 @@ export class ExperimentsService {
     return { requeued: toRun.length };
   }
 
+  /** Stop: clear queued work. Trials already running on a worker finish on their own. */
   async cancel(id: string) {
-    await this.trials.update({ experimentId: id, status: 'queued' }, { status: 'cancelled' });
+    await this.get(id);
+    const cleared = await this.queue.clear(id);
+    const { affected } = await this.trials.update({ experimentId: id, status: 'queued' }, { status: 'cancelled' });
     await this.experiments.update(id, { status: 'cancelled' });
-    return { ok: true };
+    const running = await this.trials.count({ where: { experimentId: id, status: 'running' } });
+    return { ok: true, jobsCleared: cleared, trialsCancelled: affected ?? 0, stillRunning: running };
   }
 
   /** Remove an experiment with its trials, trace events and grades. Running experiments must be cancelled first. */

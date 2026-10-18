@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
-import { API, api, pct, pts, usd } from '../api';
+import { API, api, pct, pts, post, usd } from '../api';
 
 const props = defineProps<{ id: string }>();
 const detail = ref<any>(null);
@@ -14,6 +14,28 @@ async function load() {
   if (['done', 'incomplete', 'cancelled'].includes(detail.value.experiment.status)) clearInterval(timer);
 }
 watch(filter, load);
+
+const busy = ref(false);
+const note = ref('');
+const counts = computed(() => {
+  const c: Record<string, number> = {};
+  for (const t of detail.value?.trials ?? []) c[t.status] = (c[t.status] ?? 0) + 1;
+  return c;
+});
+const canStop = computed(() => (counts.value.queued ?? 0) + (counts.value.running ?? 0) > 0 && detail.value?.experiment.status !== 'cancelled');
+const canResume = computed(() => ['infra_error', 'harness_error', 'cancelled', 'queued', 'running'].some((s) => counts.value[s]) && !canStop.value);
+async function act(kind: 'cancel' | 'resume') {
+  if (kind === 'cancel' && !window.confirm('Stop this experiment and clear the queue? Trials already running will finish; finished results are kept.')) return;
+  busy.value = true; note.value = '';
+  try {
+    const r = await post(`/experiments/${props.id}/${kind}`, {});
+    note.value = kind === 'cancel'
+      ? `Stopped: ${r.trialsCancelled} queued trial(s) cancelled${r.stillRunning ? `, ${r.stillRunning} still finishing` : ''}.`
+      : `Re-queued ${r.requeued} trial(s).`;
+    clearInterval(timer); timer = window.setInterval(load, 3000);
+    await load();
+  } catch (e: any) { note.value = e.message; } finally { busy.value = false; }
+}
 onMounted(() => { load(); timer = window.setInterval(load, 3000); });
 onUnmounted(() => clearInterval(timer));
 
@@ -45,6 +67,15 @@ const categories = computed(() => [...new Set([...Object.keys(cmp.value?.failure
   <div v-if="detail && cmp">
     <h1>{{ detail.experiment.name }}</h1>
     <p class="muted">{{ detail.experiment.hypothesis }} · status: {{ detail.experiment.status }}</p>
+
+    <p>
+      <button v-if="canStop" class="danger" :disabled="busy" @click="act('cancel')">Stop and clear queue</button>
+      <button v-if="canResume" class="primary" :disabled="busy" @click="act('resume')">Resume failed / stopped trials</button>
+      <span class="muted" v-if="canStop || canResume">
+        {{ counts.running ?? 0 }} running · {{ counts.queued ?? 0 }} queued · {{ (counts.infra_error ?? 0) + (counts.harness_error ?? 0) }} errors · {{ counts.cancelled ?? 0 }} cancelled
+      </span>
+      <span class="muted" v-if="note"> {{ note }}</span>
+    </p>
 
     <p>
       Show:
