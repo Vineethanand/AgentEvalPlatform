@@ -31,6 +31,17 @@ model_list:
       provider: openrouter
       open_weight: true
 
+  # Local model served by Ollama on the host machine (run `ollama serve`; pull with `ollama pull qwen2.5:7b`).
+  - model_name: ollama-qwen
+    litellm_params:
+      model: ollama_chat/qwen2.5:7b
+      api_base: http://host.docker.internal:11434
+    model_info:
+      price_input_per_mtok: 0
+      price_output_per_mtok: 0
+      provider: ollama
+      open_weight: true
+
   # Judge model: pick a different provider from the agent models where possible.
   - model_name: gpt-judge
     litellm_params:

@@ -1,5 +1,5 @@
 import {
-  BadRequestException, Body, Controller, Get, Injectable, NotFoundException, OnModuleDestroy, Param, Post, Query, Res,
+  BadRequestException, Body, Controller, Delete, Get, Injectable, NotFoundException, OnModuleDestroy, Param, Post, Query, Res,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Queue } from 'bullmq';
@@ -155,6 +155,22 @@ export class ExperimentsService {
     return { ok: true };
   }
 
+  /** Remove an experiment with its trials, trace events and grades. Running experiments must be cancelled first. */
+  async remove(id: string) {
+    const exp = await this.get(id);
+    const trials = await this.trials.find({ where: { experimentId: id }, select: ['id', 'status'] });
+    if (trials.some((t) => t.status === 'running')) throw new BadRequestException('experiment has running trials: cancel it and wait for them to stop');
+    const ids = trials.map((t) => t.id);
+    for (let i = 0; i < ids.length; i += 500) {
+      const chunk = ids.slice(i, i + 500);
+      await this.events.delete({ trialId: In(chunk) });
+      await this.grades.delete({ trialId: In(chunk) });
+    }
+    await this.trials.delete({ experimentId: id });
+    await this.experiments.delete(exp.id);
+    return { ok: true, trialsDeleted: ids.length };
+  }
+
   async get(id: string) {
     const exp = await this.experiments.findOne({ where: { id } });
     if (!exp) throw new NotFoundException();
@@ -286,6 +302,7 @@ export class ExperimentsController {
   @Get(':id') detail(@Param('id') id: string) { return this.svc.detail(id); }
   @Post(':id/resume') resume(@Param('id') id: string) { return this.svc.resume(id); }
   @Post(':id/cancel') cancel(@Param('id') id: string) { return this.svc.cancel(id); }
+  @Delete(':id') remove(@Param('id') id: string) { return this.svc.remove(id); }
 
   @Get(':id/comparison')
   comparison(@Param('id') id: string, @Query('a') a?: string, @Query('b') b?: string,
