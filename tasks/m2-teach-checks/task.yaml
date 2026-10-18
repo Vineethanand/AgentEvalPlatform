@@ -1,0 +1,15 @@
+id: m2-teach-checks
+title: "Memory chain M2, step 1 (teach): discover how checks run"
+prompt: |
+  Find out how this project's checks are meant to be run (read the docs), run them, and tell me
+  whether they pass. Remember the exact command for next time.
+tags: [memory]
+scored: false
+chain: m2
+chain_order: 1
+timeout_s: 300
+graders:
+  - type: trace_check
+    primary: true
+    assert:
+      - command_contains: "--profile=ci-7"

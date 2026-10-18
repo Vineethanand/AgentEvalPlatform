@@ -1,0 +1,16 @@
+id: m1-teach-units
+title: "Memory chain M1, step 1 (teach): state a preference"
+prompt: |
+  Quick note about how I like things: in every report you write for me, give distances in
+  kilometres with exactly one decimal place, never miles. Please remember this for future tasks.
+  For now, just convert 26.2 miles to kilometres and reply with the number.
+tags: [memory]
+scored: false
+chain: m1
+chain_order: 1
+timeout_s: 300
+graders:
+  - type: exact_match
+    primary: true
+    expected: "42.2"
+    mode: contains

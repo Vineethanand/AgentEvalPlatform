@@ -1,0 +1,12 @@
+id: csv-aggregate
+title: Revenue per region from a CSV
+prompt: |
+  sales.csv is in your workspace. Write report.json containing a JSON object that maps each
+  region to its total revenue (quantity * unit_price), rounded to 2 decimals, with regions
+  sorted alphabetically. Rows with status "refunded" must be excluded.
+tags: [tool-use, data, control]
+timeout_s: 300
+graders:
+  - type: state_check
+    primary: true
+    script: grader/check.py

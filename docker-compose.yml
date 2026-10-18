@@ -1,0 +1,108 @@
+# Agent Evals Platform - local stack
+# Start: docker compose up --build
+# More workers: docker compose up --build --scale worker=4
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: evals
+      POSTGRES_PASSWORD: evals
+      POSTGRES_DB: evals
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    ports: ["5432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U evals"]
+      interval: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+
+  # Single doorway to every model provider. Logs tokens + cost per call.
+  gateway:
+    image: ghcr.io/berriai/litellm:main-stable
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://evals:evals@postgres:5432/litellm
+      STORE_MODEL_IN_DB: "False"
+    volumes:
+      - ./gateway/litellm_config.yaml:/app/config.yaml:ro
+    depends_on:
+      postgres: { condition: service_healthy }
+    ports: ["4000:4000"]
+    networks: [default, sandbox]
+
+  api:
+    build: ./apps/api
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://evals:evals@postgres:5432/evals
+      REDIS_URL: redis://redis:6379
+      TASKS_DIR: /tasks
+      MODELS_FILE: /gateway/litellm_config.yaml
+    volumes:
+      - ./tasks:/tasks:ro
+      - ./gateway:/gateway:ro
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_started }
+    ports: ["3000:3000"]
+
+  ui:
+    build: ./apps/ui
+    environment:
+      VITE_API_URL: http://localhost:3000
+    depends_on: [api]
+    ports: ["5173:80"]
+
+  worker:
+    build: ./workers
+    env_file: .env
+    environment:
+      API_URL: http://api:3000
+      REDIS_URL: redis://redis:6379
+      GATEWAY_URL: http://gateway:4000
+      SANDBOX_GATEWAY_URL: http://gateway:4000
+      TASKS_DIR: /tasks
+      TRIALS_DIR: /data/trials
+      SANDBOX_MODE: docker
+      SANDBOX_NETWORK: aep_sandbox
+      TRIALS_VOLUME: aep_trialdata
+    volumes:
+      - ./tasks:/tasks:ro
+      - trialdata:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on: [api, redis, gateway]
+
+  # Harness images are only built here; workers start them per trial.
+  harness-baseline:
+    build:
+      context: .
+      dockerfile: harnesses/baseline/Dockerfile
+    image: aep/harness-baseline:latest
+    entrypoint: ["true"]
+    profiles: ["build"]
+
+  harness-hermes:
+    build:
+      context: .
+      dockerfile: harnesses/hermes/Dockerfile
+    image: aep/harness-hermes:latest
+    entrypoint: ["true"]
+    profiles: ["build"]
+
+volumes:
+  pgdata:
+  trialdata:
+    name: aep_trialdata
+
+networks:
+  default:
+  # Sandboxes join only this network: they can reach the gateway and nothing else.
+  sandbox:
+    name: aep_sandbox
+    internal: true

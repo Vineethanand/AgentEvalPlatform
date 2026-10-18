@@ -1,0 +1,2 @@
+{"seq": 1, "type": "tool_call", "payload": {"tool": "read_file", "arguments": "{\"path\": \"docs/CONTRIBUTING.md\"}"}}
+{"seq": 2, "type": "tool_call", "payload": {"tool": "bash", "arguments": "{\"command\": \"python tools/check.py --profile=ci-7\"}"}}

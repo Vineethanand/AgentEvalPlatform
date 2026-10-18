@@ -1,0 +1,4 @@
+INVOICE INV-1042
+From: Blue River Supplies
+Date: 3 March 2025
+Total due: $1,234.50

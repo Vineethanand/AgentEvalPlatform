@@ -1,0 +1,13 @@
+id: log-triage
+title: Most frequent error code in a log
+prompt: |
+  app.log is in your workspace. Which error code (like E1234) appears most often on ERROR lines?
+  Reply with just the code.
+tags: [tool-use, data, control]
+timeout_s: 300
+graders:
+  - type: exact_match
+    primary: true
+    expected: E2207
+    normalize: [last_line, trim, lower, strip_punct]
+    mode: contains

@@ -1,0 +1,26 @@
+id: postmortem-from-logs
+title: Write a short postmortem from logs
+prompt: |
+  incident.log has the server logs from last night's outage. Write postmortem.md (under 300 words)
+  with sections Summary, Timeline, Root cause and Actions.
+tags: [writing, control]
+timeout_s: 400
+graders:
+  - type: llm_judge
+    primary: true
+    files: [postmortem.md]
+    rubric:
+      - id: times
+        text: States the outage start (02:10 UTC) and end (02:45 UTC) consistent with the logs.
+      - id: root_cause
+        text: Identifies the root cause as the database connection pool being exhausted.
+      - id: no_invention
+        text: Does not invent events, systems or numbers that are not in the logs.
+      - id: action
+        text: Lists at least one concrete action that would prevent a repeat.
+      - id: length
+        text: Is under 300 words.
+        must: false
+      - id: headings
+        text: Has the four requested sections.
+        must: false

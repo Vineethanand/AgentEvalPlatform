@@ -1,0 +1,9 @@
+order_id,region,quantity,unit_price,status
+1,North,3,19.99,paid
+2,South,1,250.00,paid
+3,North,2,5.50,refunded
+4,East,10,3.25,paid
+5,South,4,12.10,paid
+6,East,1,99.99,refunded
+7,West,7,8.00,paid
+8,North,1,100.00,paid

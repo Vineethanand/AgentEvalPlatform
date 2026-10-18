@@ -1,0 +1,4 @@
+Invoice number: INV-1043
+Vendor: Kite & Co
+Issued 2025-04-17
+Amount: EUR 89.00

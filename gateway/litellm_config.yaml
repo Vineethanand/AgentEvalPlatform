@@ -1,0 +1,51 @@
+# Model registry. Adding a model = adding one entry here (plus its key in .env).
+# model_name is the alias configs refer to. model_info.price_* is in USD per 1M tokens
+# and is snapshotted into each config version so later price changes don't rewrite history.
+# Model IDs and prices are examples: check them against the provider's pages before a real run.
+model_list:
+  - model_name: claude-sonnet
+    litellm_params:
+      model: anthropic/claude-sonnet-4-5
+      api_key: os.environ/ANTHROPIC_API_KEY
+    model_info:
+      price_input_per_mtok: 3.00
+      price_output_per_mtok: 15.00
+      provider: anthropic
+
+  - model_name: gpt-mini
+    litellm_params:
+      model: openai/gpt-4.1-mini
+      api_key: os.environ/OPENAI_API_KEY
+    model_info:
+      price_input_per_mtok: 0.40
+      price_output_per_mtok: 1.60
+      provider: openai
+
+  - model_name: qwen-open
+    litellm_params:
+      model: openrouter/qwen/qwen3-235b-a22b
+      api_key: os.environ/OPENROUTER_API_KEY
+    model_info:
+      price_input_per_mtok: 0.20
+      price_output_per_mtok: 0.60
+      provider: openrouter
+      open_weight: true
+
+  # Judge model: pick a different provider from the agent models where possible.
+  - model_name: gpt-judge
+    litellm_params:
+      model: openai/gpt-4.1-mini
+      api_key: os.environ/OPENAI_API_KEY
+    model_info:
+      price_input_per_mtok: 0.40
+      price_output_per_mtok: 1.60
+      provider: openai
+
+litellm_settings:
+  num_retries: 3          # retries 429 / 5xx with backoff
+  request_timeout: 120
+  drop_params: true       # silently drop params a provider doesn't support (e.g. seed)
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  database_url: os.environ/DATABASE_URL
