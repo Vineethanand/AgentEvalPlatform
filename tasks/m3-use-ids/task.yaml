@@ -2,7 +2,8 @@ id: m3-use-ids
 title: "Memory chain M3, step 2 (use): apply the remembered id format"
 prompt: |
   closed.csv lists the tickets closed this week by bare number. Reply with one line: their ids, lowest
-  number first, separated by commas, in my preferred ticket id format. Do not write any files.
+  number first, separated by commas, in my preferred ticket id format. Reply with only that line: do not
+  also list the ids in any other format. Do not write any files.
 tags: [memory]
 chain: m3
 chain_order: 2
