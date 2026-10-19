@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import { parse } from 'yaml';
@@ -28,7 +29,12 @@ export class TasksService {
       const spec = parse(fs.readFileSync(file, 'utf8')) as TaskSpec;
       if (spec.id !== name) throw new Error(`tasks/${name}/task.yaml has id "${spec.id}"; it must match the folder name`);
       // reference/ and negatives/ are only for validating graders; they don't change what a trial sees.
-      const hash = hashDir(dir, ['reference', 'negatives']);
+      let hash = hashDir(dir, ['reference', 'negatives']);
+      if (spec.fixtures_from) {  // shared fixtures are part of what a trial sees, so a change there is a new version
+        const shared = path.join(root, spec.fixtures_from);
+        if (!fs.existsSync(shared)) throw new Error(`tasks/${name}: fixtures_from "${spec.fixtures_from}" not found`);
+        hash = createHash('sha256').update(hash).update(hashDir(shared)).digest('hex');
+      }
       let version = await this.versions.findOne({ where: { taskId: spec.id, hash } });
       if (!version) {
         version = await this.versions.save(this.versions.create({ taskId: spec.id, hash, spec }));

@@ -3,6 +3,7 @@ title: "Memory chain M2, step 2 (use): rerun the remembered check command"
 prompt: |
   Run the checks you ran last time.
 tags: [memory]
+fixtures_from: _shared/qa-suite
 chain: m2
 chain_order: 2
 timeout_s: 300

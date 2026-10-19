@@ -69,10 +69,11 @@ class Runner:
         tdir = self.trials_dir / trial_id / f"attempt-{attempt}"
         shutil.rmtree(tdir, ignore_errors=True)
         workspace = tdir / "workspace"
+        workspace.mkdir(parents=True)
+        if task.get("fixtures_from"):  # shared fixtures first, then the task's own fixtures on top
+            shutil.copytree(self.tasks_dir / task["fixtures_from"], workspace, dirs_exist_ok=True)
         if (task_dir / "fixtures").exists():
-            shutil.copytree(task_dir / "fixtures", workspace)
-        else:
-            workspace.mkdir(parents=True)
+            shutil.copytree(task_dir / "fixtures", workspace, dirs_exist_ok=True)
         skills_src = tdir / "skills_src"
         skills_src.mkdir()
         for s in settings.get("skills") or []:

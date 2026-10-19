@@ -7,6 +7,7 @@ task version whenever its content changes.
 tasks/<id>/
   task.yaml          prompt, tags, timeout, graders (one marked primary)
   fixtures/          copied into the agent's fresh workspace
+  (task.yaml `fixtures_from: _shared/<name>` copies a shared folder from tasks/_shared/ in first, so tasks in a chain can use one copy)
   grader/            check.py for state_check, tests/ for unit_test (hidden from the agent)
   reference/         a known-good solution: MUST pass the primary grader
   negatives/<name>/  known-bad solutions: MUST fail it

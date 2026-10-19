@@ -2,9 +2,11 @@ id: m2-teach-checks
 title: "Memory chain M2, step 1 (teach): run a custom check suite"
 prompt: |
   This project has a custom check suite at qa/run_suite.py. Run it with the argument --suite=nightly-4.
-  The expected result is the line "SUITE nightly-4: 12 passed, 0 failed" and exit code 0. Run it, confirm
-  you got that result, and remember the exact command for next time.
+  It runs 4 small tests (a calculation, reading a data file, writing a JSON report, a string check). The
+  expected result is that all 4 pass, ending with the line "SUITE nightly-4: 4 passed, 0 failed", exit code 0.
+  Run it, confirm you got that result, and remember the exact command for next time.
 tags: [memory]
+fixtures_from: _shared/qa-suite
 scored: false
 chain: m2
 chain_order: 1

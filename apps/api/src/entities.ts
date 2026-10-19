@@ -28,6 +28,7 @@ export interface TaskSpec {
   prompt: string;
   tags?: string[];
   timeout_s?: number;
+  fixtures_from?: string;    // shared folder under tasks/ copied into the workspace before the task's own fixtures/
   scored?: boolean;          // false for "teach" tasks in a memory chain
   chain?: string;            // memory chain id, e.g. "m1"
   chain_order?: number;      // position in the chain
