@@ -29,10 +29,15 @@ const estimate = computed(() => {
   }, 0);
 });
 
+// Default name = the selected configs in order, e.g. "hermes-sonnet v1 vs hermes-qwen v2".
+const defaultName = computed(() => form.value.configVersionIds
+  .map((id) => versions.value.find((v) => v.id === id)?.label).filter(Boolean).join(' vs '));
+
 async function launch() {
   error.value = '';
   try {
-    const res = await post('/experiments', { ...form.value, nOverrides: JSON.parse(form.value.nOverrides) });
+    const name = form.value.name.trim() || defaultName.value;
+    const res = await post('/experiments', { ...form.value, name, nOverrides: JSON.parse(form.value.nOverrides) });
     router.push(`/experiments/${res.experiment.id}`);
   } catch (e: any) { error.value = e.message; }
 }
@@ -43,7 +48,8 @@ onMounted(load);
 <template>
   <h1>New experiment</h1>
   <div class="panel">
-    <label>Name</label><input v-model="form.name" style="width: 100%" placeholder="Hermes memory on vs off" />
+    <label>Name</label><input v-model="form.name" style="width: 100%" :placeholder="defaultName || 'Select configs to get a default name, e.g. A vs B'" />
+    <p class="muted" v-if="!form.name.trim() && defaultName">Left blank, the name will be: {{ defaultName }}</p>
     <label>Hypothesis (write it before running)</label>
     <textarea v-model="form.hypothesis" rows="2" style="width: 100%"></textarea>
 

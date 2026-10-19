@@ -31,6 +31,28 @@ model_list:
       provider: openrouter
       open_weight: true
 
+  # Free models that Hermes lists (Poolside Laguna XS 2.1, Thinking Machines Inkling Small). They are hosted on OpenRouter, so they
+  # need OPENROUTER_API_KEY; the free tier is rate limited, so expect 429s on large runs.
+  - model_name: laguna-xs-free
+    litellm_params:
+      model: openrouter/poolside/laguna-xs-2.1:free
+      api_key: os.environ/OPENROUTER_API_KEY
+    model_info:
+      price_input_per_mtok: 0
+      price_output_per_mtok: 0
+      provider: openrouter
+      open_weight: true
+
+  - model_name: inkling-small-free
+    litellm_params:
+      model: openrouter/thinkingmachines/inkling-small:free
+      api_key: os.environ/OPENROUTER_API_KEY
+    model_info:
+      price_input_per_mtok: 0
+      price_output_per_mtok: 0
+      provider: openrouter
+      open_weight: true
+
   # Local model served by Ollama on the host machine (run `ollama serve`; pull with `ollama pull qwen2.5:7b`).
   - model_name: ollama-qwen
     litellm_params:

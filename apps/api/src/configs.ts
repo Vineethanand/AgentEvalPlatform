@@ -1,7 +1,7 @@
-import { BadRequestException, Body, Controller, Get, Injectable, NotFoundException, Param, Post } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Injectable, NotFoundException, Param, Post } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Config, ConfigSettings, ConfigVersion } from './entities';
+import { Config, ConfigSettings, ConfigVersion, Experiment } from './entities';
 import { HARNESSES, loadModels, sha256, stableStringify } from './common';
 
 export interface ConfigVersionInput {
@@ -26,6 +26,7 @@ export class ConfigsService {
   constructor(
     @InjectRepository(Config) private configs: Repository<Config>,
     @InjectRepository(ConfigVersion) private versions: Repository<ConfigVersion>,
+    @InjectRepository(Experiment) private experiments: Repository<Experiment>,
   ) {}
 
   /** Reject settings the chosen harness can't honour, and unknown models. */
@@ -73,6 +74,20 @@ export class ConfigsService {
     return cfgs.map((c) => ({ ...c, versions: versions.filter((v) => v.configId === c.id) }));
   }
 
+  /** Experiments pin exact config versions, so a config that any experiment used cannot be deleted. */
+  async remove(id: string) {
+    const cfg = await this.configs.findOne({ where: { id } });
+    if (!cfg) throw new NotFoundException();
+    const versions = await this.versions.find({ where: { configId: id } });
+    const ids = new Set(versions.map((v) => v.id));
+    const users = (await this.experiments.find()).filter((e) => e.configVersionIds.some((v) => ids.has(v)));
+    if (users.length)
+      throw new BadRequestException(`config is used by ${users.length} experiment(s): ${users.map((e) => e.name).join(', ')}. Delete those experiments first.`);
+    await this.versions.delete({ configId: id });
+    await this.configs.delete(id);
+    return { ok: true, versionsDeleted: versions.length };
+  }
+
   async version(id: string) {
     const v = await this.versions.findOne({ where: { id } });
     if (!v) throw new NotFoundException();
@@ -89,5 +104,6 @@ export class ConfigsController {
   @Get('configs') list() { return this.svc.list(); }
   @Post('configs') create(@Body() body: { name: string; description?: string } & ConfigVersionInput) { return this.svc.create(body); }
   @Post('configs/:id/versions') addVersion(@Param('id') id: string, @Body() body: ConfigVersionInput) { return this.svc.addVersion(id, body); }
+  @Delete('configs/:id') remove(@Param('id') id: string) { return this.svc.remove(id); }
   @Get('config-versions/:id') version(@Param('id') id: string) { return this.svc.version(id); }
 }

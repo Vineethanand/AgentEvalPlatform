@@ -87,8 +87,11 @@ export class ExperimentsService {
     const tvs = await this.taskVersions.find({ where: { id: In(taskRows.map((t) => t.latestVersionId!)) } });
 
     // Frozen snapshot: the experiment pins exact task versions and config versions.
+    const name = body.name?.trim()
+      || cvs.sort((a, b) => body.configVersionIds.indexOf(a.id) - body.configVersionIds.indexOf(b.id))
+        .map((c) => `${c.modelAlias} (${c.harness} v${c.version})`).join(' vs ');
     const exp = await this.experiments.save(this.experiments.create({
-      name: body.name, hypothesis: body.hypothesis ?? '',
+      name, hypothesis: body.hypothesis ?? '',
       taskVersionIds: tvs.map((t) => t.id), configVersionIds: body.configVersionIds,
       nTrials: body.nTrials, nOverrides: body.nOverrides ?? {}, seed: body.seed ?? 1234, status: 'queued',
     }));
