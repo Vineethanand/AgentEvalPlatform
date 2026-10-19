@@ -12,6 +12,12 @@ Examples
 
   # Small pilot first (N=3) to measure variance and token use
   python scripts/run_experiment.py memory --harness hermes --model gpt-mini --n 3 --name pilot
+
+  # See which tasks the platform supports
+  python scripts/run_experiment.py --list-tasks
+
+  # Run only some tasks (unknown names are skipped with a warning; if none are known it exits with an error)
+  python scripts/run_experiment.py models --harness hermes --model claude-haiku --model-b gpt-mini --tasks csv-aggregate tile-defect
 """
 from __future__ import annotations
 
@@ -37,6 +43,32 @@ def call(method: str, path: str, body=None):
     return r.json()
 
 
+def supported_tasks() -> dict[str, dict]:
+    """Task id -> task row, for every task the platform currently knows about."""
+    return {t["id"]: t for t in call("GET", "/tasks")}
+
+
+def print_tasks(tasks: dict[str, dict]) -> None:
+    width = max((len(i) for i in tasks), default=0)
+    print(f"{len(tasks)} supported task(s):")
+    for tid, t in sorted(tasks.items()):
+        print(f"  {tid:<{width}}  {t.get('title', '')}  [{', '.join(t.get('tags') or [])}]")
+
+
+def select_tasks(requested: list[str], tasks: dict[str, dict]) -> list[str]:
+    """Keep the supported names (in the order given, no repeats). Warn about the rest; exit if nothing is left."""
+    names = list(dict.fromkeys(n.strip() for item in requested for n in item.split(",") if n.strip()))
+    known = [n for n in names if n in tasks]
+    unknown = [n for n in names if n not in tasks]
+    if not known:
+        sys.exit(f"error: none of the requested tasks are supported: {', '.join(unknown)}. "
+                 "Run with --list-tasks to see the supported tasks.")
+    if unknown:
+        print(f"warning: these tasks are not supported and will not run: {', '.join(unknown)}. "
+              f"Running the rest: {', '.join(known)}", file=sys.stderr)
+    return known
+
+
 def config(name: str, harness: str, model: str, memory: str) -> str:
     """Create the config, or add a version to an existing one with the same name. Returns the version id."""
     settings = {**BASE_SETTINGS, "memory": {"mode": memory}}
@@ -48,18 +80,28 @@ def config(name: str, harness: str, model: str, memory: str) -> str:
 
 def main() -> None:
     p = argparse.ArgumentParser()
-    p.add_argument("axis", choices=["memory", "models", "harness"])
+    p.add_argument("axis", nargs="?", choices=["memory", "models", "harness"])
     p.add_argument("--harness", default="hermes")
     p.add_argument("--harness-b")
-    p.add_argument("--model", required=True)
+    p.add_argument("--model")
     p.add_argument("--model-b")
     p.add_argument("--n", type=int, default=10)
     p.add_argument("--memory-n", type=int, default=20, help="trials for memory-chain tasks (few tasks carry the hypothesis)")
     p.add_argument("--name")
     p.add_argument("--seed", type=int, default=1234)
+    p.add_argument("--tasks", nargs="+", metavar="TASK",
+                   help="run only these task ids (space or comma separated); default is all tasks")
+    p.add_argument("--list-tasks", action="store_true", help="print the supported tasks and exit")
     a = p.parse_args()
 
     print("syncing tasks:", call("POST", "/tasks/sync"))
+    tasks = supported_tasks()
+    if a.list_tasks:
+        print_tasks(tasks)
+        return
+    if not a.axis or not a.model:
+        p.error("axis and --model are required (or use --list-tasks)")
+    task_ids = select_tasks(a.tasks, tasks) if a.tasks else None
     if a.axis == "memory":
         A = config(f"{a.harness}-{a.model}-mem-off", a.harness, a.model, "off")
         B = config(f"{a.harness}-{a.model}-mem-carry", a.harness, a.model, "carry")
@@ -77,10 +119,11 @@ def main() -> None:
         B = config(f"{a.harness_b}-{a.model}", a.harness_b, a.model, "off")
         hyp = f"{a.harness_b} vs {a.harness} with {a.model}: difference in pass rate and cost."
 
-    overrides = {t: a.memory_n for t in MEMORY_TASKS} if a.axis == "memory" else {}
+    overrides = {t: a.memory_n for t in MEMORY_TASKS if task_ids is None or t in task_ids} if a.axis == "memory" else {}
     res = call("POST", "/experiments", {
         "name": a.name or f"{a.axis}: A vs B", "hypothesis": hyp, "configVersionIds": [A, B],
         "nTrials": a.n, "nOverrides": overrides, "seed": a.seed,
+        **({"taskIds": task_ids} if task_ids else {}),
     })
     print(f"launched experiment {res['experiment']['id']} with {res['trials']} trials")
     print(f"open http://localhost:5173/experiments/{res['experiment']['id']}")
