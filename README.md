@@ -9,7 +9,7 @@ Vue UI ──► NestJS API ──► PostgreSQL
                │
                ▼ enqueue trials
         Redis + BullMQ ──► Python workers ──► one sandbox container per trial
-                                │                    │ (harness adapter: Hermes / baseline)
+                                │                    │ (harness adapter: Hermes / baseline / Claude Code)
                                 ▼                    ▼
                              graders        LiteLLM gateway ──► Anthropic / OpenAI / OpenRouter
 ```
@@ -124,22 +124,61 @@ the verdict is withheld until you `POST /experiments/:id/resume`.
 
 ## Status and known gaps
 
-Verified in this repo:
+### Runs so far (real models)
+
+| Harness | Model | Result |
+| --- | --- | --- |
+| Hermes | `claude-haiku` through the gateway with an Anthropic API key (the key needs `anthropic-workspace-id` set in `gateway/litellm_config.yaml`, and the account needs API credit) | Verified working |
+| Hermes | Free OpenRouter models (`laguna-xs-free`, `inkling-small-free`) | Works, but the free tier's daily request limit (50/day) was hit after only a few experiments. `inkling-small-free` is also refused by OpenRouter outside its approved agentic harnesses |
+| Hermes | Local Ollama: `qwen2.5:1.5b` (`ollama-qwen-1.5b`) and `qwen2.5:3b` (`ollama-qwen-3b`), plus `qwen2.5:7b` (`ollama-qwen`) | Runs end to end through the gateway, but see the local-model notes below |
+
+Also added: a `claude-code` harness (Claude Code CLI, subscription auth via `CLAUDE_CODE_OAUTH_TOKEN`).
+
+### Using local Ollama models
+
+1. `ollama pull qwen2.5:1.5b` (and/or `qwen2.5:3b`), with `ollama serve` running on the host.
+2. The aliases `ollama-qwen`, `ollama-qwen-1.5b` and `ollama-qwen-3b` are already in `gateway/litellm_config.yaml`
+   and reach Ollama at `host.docker.internal:11434`. Restart the gateway after editing it:
+   `docker compose restart gateway`.
+3. Pick one of those aliases for a Hermes config.
+
+Known limits of the local models (with CPU-only inference):
+- Very slow: a single Hermes step on `qwen2.5:7b` took 90 to 140 seconds, so trials often hit their timeout.
+- Ollama's default 4096-token context clips Hermes's prompt, so the `1.5b` and `3b` entries set `num_ctx: 16384`.
+- Small Qwen models often call Hermes's `tool_call` wrapper without its required `calls` array, so the call is
+  rejected. Treat them as a check that the plumbing works, not as a fair comparison against hosted models.
+
+### Task set
+
+Besides the existing tasks, these were added as harder, reasoning-heavy tasks (each with a reference solution and
+known-bad answers that `scripts/validate_tasks.py` checks):
+
+- **`csv-aggregate`**: aggregate functions over values, e.g. revenue per region from a CSV (quantity × unit price,
+  refunded rows excluded).
+- **`tile-defect`**: find the one wrong pixel in a 32×32 image made of a repeating 4×4 tile, and report its row, column
+  and tile.
+- **`job-schedule`**: order 20 batch jobs by finish time across different UTC offsets and report peak concurrency.
+
+LLM-judge calibration: manual labels for `postmortem-from-logs` are in `tasks/postmortem-from-logs/labels/`, and
+`scripts/calibrate_judge.py` compares the judge against them (see `docs/README.md`).
+
+### Verified in this repo
+
 - Worker pipeline end to end with a scripted fake model: baseline harness, local sandbox, graders, failure rules,
   memory carry vs off on a teach → use chain, and no memory leaking between independent trials.
 - All deterministic graders against their reference and known-bad solutions.
 - Statistics against scipy reference values, plus an A/A simulation (false "better" rate ≈ 2%).
 
-Not yet verified (needs a machine with Docker and API keys):
-- The Hermes adapter against a real Hermes install. Its assumptions are listed at the top of
-  `workers/evalworker/adapters/hermes.py`; it was tested only against a stand-in `run_agent` module.
-- LiteLLM per-trial keys and `/spend/logs` (the worker falls back to harness-reported tokens if this fails).
-- Docker sandbox mode and the full `docker compose` stack.
+Not yet verified:
+- The Hermes adapter's assumptions about its Python API are listed at the top of
+  `workers/evalworker/adapters/hermes.py`. It now runs against the real Hermes image (see the table above),
+  but not every assumption has been checked; for example the installed Hermes ignores the `temperature` setting.
+- The `claude-code` harness end to end.
 - The LLM judge's agreement with human labels (see `docs/README.md` for the calibration procedure).
 
 Simplifications versus the design document:
 - Graders run in the worker process, not a separate container.
 - Trace events are posted after the trial finishes rather than streamed.
 - Sandboxes mount the shared trials volume, so a sandbox could in principle read other trials' folders.
-- 10 scored tasks (+2 unscored teach tasks), not 24. The task format makes adding more a matter of adding folders.
+- 12 scored tasks (+2 unscored teach tasks), not 24. The task format makes adding more a matter of adding folders.
 - Tables are created by TypeORM `synchronize`; production use would need migrations.
