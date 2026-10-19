@@ -55,7 +55,8 @@ const nameOf = (id: string) => {
 // Delta bar: centred at 0, from -100 to +100 points.
 const barStyle = (d: number) => ({ left: `${50 + Math.min(0, d) * 50}%`, width: `${Math.abs(d) * 50}%`, background: d >= 0 ? 'var(--good)' : 'var(--bad)' });
 const dotColor = (t: any) => t.status === 'queued' ? 'var(--line)' : t.status === 'running' ? 'var(--warn)' :
-  t.status !== 'done' ? 'var(--bad)' : t.passed ? 'var(--good)' : 'var(--muted)';
+  t.status === 'infra_error' ? 'var(--infra)' : t.status === 'harness_error' ? 'var(--harness)' :
+  t.status !== 'done' ? 'var(--muted)' : t.passed ? 'var(--good)' : 'var(--bad)';
 const grid = computed(() => {
   const rows: Record<string, Record<string, any[]>> = {};
   for (const t of detail.value?.trials ?? []) {
@@ -151,7 +152,13 @@ const categories = computed(() => [...new Set([...Object.keys(cmp.value?.failure
 
     <div class="panel">
       <h3>All trials</h3>
-      <p class="muted">green = pass · grey = fail · amber = running · red = error. Click a dot to inspect the trial.</p>
+      <p class="muted"><span class="dot" style="background: var(--good)"></span> pass ·
+        <span class="dot" style="background: var(--bad)"></span> fail ·
+        <span class="dot" style="background: var(--harness)"></span> harness error ·
+        <span class="dot" style="background: var(--infra)"></span> infrastructure error ·
+        <span class="dot" style="background: var(--warn)"></span> running ·
+        <span class="dot" style="background: var(--line); border: 1px solid var(--muted)"></span> queued ·
+        <span class="dot" style="background: var(--muted)"></span> cancelled. Click a dot to inspect the trial.</p>
       <table>
         <tr><th>Task</th><th v-for="cv in detail.experiment.configVersionIds" :key="cv">{{ nameOf(cv) }}</th></tr>
         <tr v-for="(byCfg, taskId) in grid" :key="taskId">
