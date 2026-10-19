@@ -3,6 +3,8 @@
 #   cd workers && python -m pytest -q       # worker tests
 #   python scripts/validate_tasks.py        # grader checks
 #   python scripts/run_experiment.py ...    # experiment launcher
+#   pylint --rcfile=.pylintrc workers scripts tasks   # code style check (config in .pylintrc)
 #
 # The API's tests are JavaScript: cd apps/api && npm install && npm test
 -r workers/requirements.txt
+pylint>=3.0

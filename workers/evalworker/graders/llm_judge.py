@@ -44,12 +44,18 @@ Reply with JSON only, in exactly this shape:
 
 
 def _files_snapshot(workspace: Path, include: list[str] | None, limit: int = 12000) -> str:
+    """Text of the files the agent produced, for the judge to read.
+
+    Files are listed in a stable order and added until ``limit`` characters is reached; a file that would not
+    fit is listed as omitted rather than cut mid-way, so the judge never sees half a file and mistakes it for
+    the whole thing. ``include`` restricts the snapshot to named files.
+    """
     parts, used = [], 0
     paths = [workspace / p for p in include] if include else sorted(p for p in workspace.rglob("*") if p.is_file())
     for p in paths:
         if not p.exists() or not p.is_file():
             continue
-        text = p.read_text(errors="replace")
+        text = p.read_text(encoding="utf-8", errors="replace")
         chunk = f"### {p.relative_to(workspace)}\n{text}\n"
         if used + len(chunk) > limit:
             parts.append(f"### {p.relative_to(workspace)}\n[omitted: size limit]\n")
@@ -60,40 +66,56 @@ def _files_snapshot(workspace: Path, include: list[str] | None, limit: int = 120
 
 
 def _parse(content: str) -> dict:
+    """Extract the judge's JSON object from its reply, tolerating text or code fences around it."""
     m = re.search(r"\{.*\}", content or "", re.S)
     if not m:
         raise ValueError("judge did not return JSON")
     return json.loads(m.group(0))
 
 
+def _ask_judge(prompt: str, use_cli: bool, model: str) -> tuple[str, dict]:
+    """Send the prompt to the chosen backend. Returns (reply text, usage with prompt_tokens/completion_tokens)."""
+    if use_cli:
+        return claude_cli.ask(prompt, model)
+    resp = chat(os.environ.get("GATEWAY_URL", "http://localhost:4000"), os.environ.get("LITELLM_MASTER_KEY", ""),
+                model, [{"role": "user", "content": prompt}], temperature=0.0)
+    return resp["choices"][0]["message"]["content"], resp.get("usage") or {}
+
+
 def llm_judge(inp: "GradeInput", spec: dict[str, Any]) -> dict[str, Any]:
+    """Grade the answer (and produced files) against the task's rubric with a model.
+
+    Steps: build the prompt from the task, answer, files and rubric; ask the judge, retrying up to 3 times if
+    the call fails or the reply is not valid JSON; then turn each criterion's yes/no into a check. The grade
+    passes when every "must" criterion is yes, and the score is the share of all criteria answered yes. If all
+    three attempts fail the trial is marked ``ungraded`` (and fails) instead of guessing. The cost of the judge
+    calls is returned separately in ``judgeCostUsd`` so it is not mixed into the agent's cost.
+    """
     rubric = spec["rubric"]
-    rubric_text = "\n".join(f"- id={c['id']} ({'MUST' if c.get('must', True) else 'nice'}): {c['text']}" for c in rubric)
+    rubric_text = "\n".join(
+        f"- id={c['id']} ({'MUST' if c.get('must', True) else 'nice'}): {c['text']}" for c in rubric)
     prompt = JUDGE_PROMPT.format(
         task=inp.task["prompt"], answer=inp.final_answer or "(empty)",
         files=_files_snapshot(inp.workspace, spec.get("files")), rubric=rubric_text,
     )
     backend = spec.get("backend") or os.environ.get("JUDGE_BACKEND", "gateway")
     use_cli = backend == "claude-cli"
-    model = (spec.get("model") or os.environ.get("JUDGE_CLI_MODEL", "haiku")) if use_cli         else spec.get("model") or os.environ.get("JUDGE_MODEL", "gpt-judge")
-    base = os.environ.get("GATEWAY_URL", "http://localhost:4000")
-    key = os.environ.get("LITELLM_MASTER_KEY", "")
-    prices = spec.get("_judge_prices") or {}
+    if use_cli:
+        model = spec.get("model") or os.environ.get("JUDGE_CLI_MODEL", "haiku")
+    else:
+        model = spec.get("model") or os.environ.get("JUDGE_MODEL", "gpt-judge")
+    prices = spec.get("_judge_prices") or {}   # USD per million tokens, attached by the runner
     cost, last_err = 0.0, None
-    for _ in range(3):  # retry malformed JSON
+    for _ in range(3):  # retry failed calls and malformed JSON
         try:
-            if use_cli:
-                text, u = claude_cli.ask(prompt, model)
-                resp = {"choices": [{"message": {"content": text}}]}
-            else:
-                resp = chat(base, key, model, [{"role": "user", "content": prompt}], temperature=0.0)
-                u = resp.get("usage") or {}
+            reply, usage = _ask_judge(prompt, use_cli, model)
         except (LLMError, claude_cli.CliJudgeError) as e:
             last_err = e
             continue
-        cost += (u.get("prompt_tokens", 0) * prices.get("in", 0) + u.get("completion_tokens", 0) * prices.get("out", 0)) / 1e6
+        cost += (usage.get("prompt_tokens", 0) * prices.get("in", 0)
+                 + usage.get("completion_tokens", 0) * prices.get("out", 0)) / 1e6
         try:
-            verdicts = {c["id"]: c for c in _parse(resp["choices"][0]["message"]["content"])["criteria"]}
+            verdicts = {c["id"]: c for c in _parse(reply)["criteria"]}
             break
         except (ValueError, KeyError, json.JSONDecodeError) as e:
             last_err = e
@@ -103,7 +125,7 @@ def llm_judge(inp: "GradeInput", spec: dict[str, Any]) -> dict[str, Any]:
 
     checks = []
     for c in rubric:
-        v = verdicts.get(c["id"], {})
+        v = verdicts.get(c["id"], {})   # a criterion the judge skipped counts as "no"
         checks.append({"name": c["id"], "passed": str(v.get("verdict", "no")).lower() == "yes",
                        "detail": v.get("reason", "no verdict"), "must": c.get("must", True)})
     must = [c for c in checks if c["must"]]

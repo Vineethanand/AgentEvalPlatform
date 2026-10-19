@@ -21,15 +21,22 @@ from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "workers"))
-from evalworker.graders import GradeInput, grade_all, primary  # noqa: E402
+sys.path.insert(0, str(ROOT / "workers"))   # lets this script import the worker's graders without installing it
+from evalworker.graders import GradeInput, grade_all, primary  # pylint: disable=wrong-import-position
 
 
 def run(task: dict, task_dir: Path, sol: Path, with_judge: bool) -> dict | None:
+    """Grade one solution folder with the task's graders and return the primary grade (None if there is none).
+
+    A solution without a ``workspace/`` folder is graded against an empty temporary one, which is right for
+    tasks that only look at the final answer or the trace.
+    """
     ws = sol / "workspace"
-    answer = (sol / "answer.txt").read_text() if (sol / "answer.txt").exists() else ""
-    events = [json.loads(l) for l in (sol / "events.jsonl").read_text().splitlines() if l.strip()] \
-        if (sol / "events.jsonl").exists() else []
+    answer = (sol / "answer.txt").read_text(encoding="utf-8") if (sol / "answer.txt").exists() else ""
+    events = []
+    if (sol / "events.jsonl").exists():
+        events = [json.loads(line) for line in (sol / "events.jsonl").read_text(encoding="utf-8").splitlines()
+                  if line.strip()]
     with tempfile.TemporaryDirectory() as tmp:
         if not ws.exists():
             ws = Path(tmp)
@@ -38,13 +45,15 @@ def run(task: dict, task_dir: Path, sol: Path, with_judge: bool) -> dict | None:
 
 
 def main(argv: list[str]) -> int:
+    """Check every (or the named) task. Returns 1 if any solution is graded the wrong way round."""
     with_judge = "--with-judge" in argv
     only = [a for a in argv if not a.startswith("--")]
     failures, checked = 0, 0
     for task_dir in sorted((ROOT / "tasks").iterdir()):
+        # Folders without a task.yaml (_skills, _shared) are not tasks.
         if not (task_dir / "task.yaml").exists() or (only and task_dir.name not in only):
             continue
-        task = yaml.safe_load((task_dir / "task.yaml").read_text())
+        task = yaml.safe_load((task_dir / "task.yaml").read_text(encoding="utf-8"))
         ptype = next((g for g in task["graders"] if g.get("primary")), task["graders"][0])["type"]
         if ptype == "llm_judge" and not with_judge:
             print(f"SKIP  {task_dir.name:26s} (llm_judge; use --with-judge)")

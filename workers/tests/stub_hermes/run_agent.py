@@ -4,19 +4,26 @@ import os
 from pathlib import Path
 
 
-class AIAgent:
-    def __init__(self, base_url=None, api_key=None, model=None, max_iterations=10, quiet_mode=False,
-                 disabled_toolsets=None, save_trajectories=False):
-        self.disabled = disabled_toolsets or []
+class AIAgent:  # pylint: disable=too-few-public-methods
+    """Accepts the constructor arguments the real AIAgent does (but not ``temperature``, like the installed one).
+
+    Only ``disabled_toolsets`` has an effect: it decides whether the stub writes a memory file.
+    """
+
+    def __init__(self, **kwargs):
+        """Remember which toolsets are disabled; every other argument is accepted and ignored."""
+        self.disabled = kwargs.get("disabled_toolsets") or []
 
     def run_conversation(self, user_message):
-        Path("report.json").write_text(json.dumps({"East": 32.5, "North": 159.97, "South": 298.4, "West": 56.0}))
+        """Pretend to solve the csv-aggregate task: write the report file, maybe write memory, return messages."""
+        report = {"East": 32.5, "North": 159.97, "South": 298.4, "West": 56.0}
+        Path("report.json").write_text(json.dumps(report), encoding="utf-8")
         if "memory" not in self.disabled:
-            Path(os.environ["HERMES_HOME"], "MEMORY.md").write_text("user likes json reports\n")
-        return {"final_response": "done", "messages": [
+            Path(os.environ["HERMES_HOME"], "MEMORY.md").write_text("user likes json reports\n", encoding="utf-8")
+        return {"final_response": json.dumps(report), "messages": [
             {"role": "user", "content": user_message},
             {"role": "assistant", "content": None, "tool_calls": [
                 {"id": "x1", "function": {"name": "write_file", "arguments": "{\"path\": \"report.json\"}"}}]},
             {"role": "tool", "tool_call_id": "x1", "name": "write_file", "content": "ok"},
-            {"role": "assistant", "content": "done"},
+            {"role": "assistant", "content": json.dumps(report)},
         ]}

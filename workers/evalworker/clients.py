@@ -19,11 +19,17 @@ class ApiClient:
     """Talks to the NestJS API's internal endpoints. Retries on network errors."""
 
     def __init__(self, base: str | None = None, token: str | None = None):
+        """Defaults come from API_URL and INTERNAL_TOKEN; the token is the shared secret the API checks."""
         self.base = (base or os.environ.get("API_URL", "http://localhost:3000")).rstrip("/")
         self.s = requests.Session()
         self.s.headers["x-internal-token"] = token or os.environ.get("INTERNAL_TOKEN", "")
 
     def _req(self, method: str, path: str, **kw) -> Any:
+        """Call ``/internal/trials<path>`` with up to 5 attempts and exponential backoff (1, 2, 4, 8, 16 s).
+
+        A 404 is not retried: it means the trial was deleted, which is reported as :class:`TrialGone`. Any other
+        HTTP error status or network error is retried, and the last one is reported once the attempts run out.
+        """
         last: Exception | None = None
         for i in range(5):
             try:
@@ -38,16 +44,20 @@ class ApiClient:
         raise RuntimeError(f"API call failed: {method} {path}: {last}")
 
     def spec(self, trial_id: str) -> dict:
+        """Fetch what a worker needs to run the trial: the trial row, its task version and its config version."""
         return self._req("GET", f"/{trial_id}/spec")
 
     def start(self, trial_id: str) -> dict:
+        """Claim the trial and get its attempt number (or ``skip`` if it should not run)."""
         return self._req("POST", f"/{trial_id}/start")
 
     def events(self, trial_id: str, attempt: int, events: list[dict]) -> None:
+        """Upload the trace in batches of 200 events so a long trace does not exceed the request size limit."""
         for i in range(0, len(events), 200):
             self._req("POST", f"/{trial_id}/events", json={"attempt": attempt, "events": events[i:i + 200]})
 
     def complete(self, trial_id: str, body: dict) -> dict:
+        """Post the final result. The API ignores a repeat for the same attempt, so retries are safe."""
         return self._req("POST", f"/{trial_id}/complete", json=body)
 
 
@@ -60,11 +70,17 @@ class GatewayClient:
     """
 
     def __init__(self, base: str | None = None, master_key: str | None = None):
+        """Defaults come from GATEWAY_URL and LITELLM_MASTER_KEY (the key that may create and read other keys)."""
         self.base = (base or os.environ.get("GATEWAY_URL", "http://localhost:4000")).rstrip("/")
         self.master = master_key or os.environ.get("LITELLM_MASTER_KEY", "")
         self.h = {"Authorization": f"Bearer {self.master}"}
 
     def mint_key(self, trial_id: str, model_alias: str, max_budget_usd: float) -> str | None:
+        """Create a key valid for one model alias, with a dollar cap. Returns None if the gateway refuses.
+
+        Falling back to the master key (the caller does this when None is returned) keeps the trial running,
+        but its usage then has to come from the harness, because the master key's spend log is shared.
+        """
         try:
             r = requests.post(f"{self.base}/key/generate", headers=self.h, timeout=20, json={
                 "models": [model_alias], "max_budget": round(max_budget_usd, 4), "duration": "6h",
@@ -72,12 +88,16 @@ class GatewayClient:
             })
             r.raise_for_status()
             return r.json()["key"]
-        except Exception as e:  # noqa: BLE001 - fall back to the master key, usage from the harness
+        except Exception as e:  # pylint: disable=broad-exception-caught  # any failure: fall back to master key
             log.warning("could not mint gateway key (%s); using master key", e)
             return None
 
     def usage(self, key: str, wait_s: float = 20.0) -> dict[str, float] | None:
-        """Sum the key's spend logs. LiteLLM writes logs in batches, so poll briefly."""
+        """Sum the key's spend logs. LiteLLM writes logs in batches, so poll briefly.
+
+        Returns None if no log row appears within ``wait_s`` seconds, in which case the caller falls back to the
+        harness's own token counts.
+        """
         deadline = time.time() + wait_s
         while True:
             try:
@@ -91,14 +111,15 @@ class GatewayClient:
                         "cost_usd": sum(float(x.get("spend") or 0) for x in logs),
                         "calls": len(logs),
                     }
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:  # pylint: disable=broad-exception-caught  # keep polling until the deadline
                 log.warning("spend lookup failed: %s", e)
             if time.time() > deadline:
                 return None
             time.sleep(3)
 
     def delete_key(self, key: str) -> None:
+        """Delete a trial's key once it is done. Best effort: a leftover key expires on its own after 6 hours."""
         try:
             requests.post(f"{self.base}/key/delete", headers=self.h, json={"keys": [key]}, timeout=20)
-        except Exception:  # noqa: BLE001
+        except Exception:  # pylint: disable=broad-exception-caught
             pass

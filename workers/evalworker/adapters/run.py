@@ -16,6 +16,12 @@ from .base import EventSink, RunResult, TrialContext
 
 
 def main(ctx_path: str, harness: str) -> int:
+    """Run one trial inside the sandbox and write its result files. Always returns 0.
+
+    Any exception from the adapter is caught on purpose: a crashing harness must still leave a result.json with
+    stop_reason="harness_error", so the worker can tell "the harness failed" apart from "the sandbox failed"
+    (which it detects from the container's exit status instead).
+    """
     ctx = TrialContext.load(Path(ctx_path))
     sink = EventSink(ctx.trial_dir / "events.jsonl")
     result = RunResult()
@@ -26,12 +32,12 @@ def main(ctx_path: str, harness: str) -> int:
         result = adapter.run(ctx, sink)
         artifacts = adapter.collect(ctx)
         artifacts["adapter"] = {"name": adapter.name, "version": adapter.version}
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:  # pylint: disable=broad-exception-caught
         result.stop_reason = "harness_error"
         result.error = f"{e!r}\n{traceback.format_exc()}"
         sink.emit("harness_note", {"error": result.error})
-    (ctx.trial_dir / "result.json").write_text(json.dumps(asdict(result), indent=2))
-    (ctx.trial_dir / "artifacts.json").write_text(json.dumps(artifacts, indent=2, default=str))
+    (ctx.trial_dir / "result.json").write_text(json.dumps(asdict(result), indent=2), encoding="utf-8")
+    (ctx.trial_dir / "artifacts.json").write_text(json.dumps(artifacts, indent=2, default=str), encoding="utf-8")
     return 0
 
 

@@ -1,3 +1,4 @@
+"""Grader for env-file-update: settings.env must contain exactly the expected settings, in order."""
 EXPECTED = [
     "# app settings",
     "APP_NAME=shop",
@@ -8,9 +9,10 @@ EXPECTED = [
 ]
 
 
-def check(workspace, final_answer):
+def check(workspace, final_answer):  # pylint: disable=unused-argument
+    """Compare the file's non-empty lines (trailing spaces ignored) with the expected lines."""
     path = workspace / "settings.env"
     if not path.exists():
         return [{"name": "settings.env exists", "passed": False}]
-    lines = [l.rstrip() for l in path.read_text().splitlines() if l.strip()]
+    lines = [line.rstrip() for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
     return [{"name": "file has exactly the expected lines", "passed": lines == EXPECTED, "detail": f"got {lines}"}]

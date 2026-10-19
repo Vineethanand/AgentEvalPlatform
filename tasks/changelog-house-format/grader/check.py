@@ -1,3 +1,7 @@
+"""Grader for changelog-house-format: the reply must be exactly one changelog entry in the house format.
+
+The format is only described in the changelog-format skill, so an agent without the skill cannot match it.
+"""
 import re
 
 EXPECTED = [
@@ -8,9 +12,10 @@ EXPECTED = [
 ]
 
 
-def check(workspace, final_answer):
+def check(workspace, final_answer):  # pylint: disable=unused-argument
+    """Compare the non-empty lines of the reply (code fences removed) with the expected entry, line by line."""
     text = re.sub(r"```(?:markdown|md)?", "", final_answer or "")
-    lines = [l.strip() for l in text.splitlines() if l.strip()]
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
     return [
         {"name": "entry matches the house format exactly", "passed": lines == EXPECTED,
          "detail": "" if lines == EXPECTED else f"got {lines}"},

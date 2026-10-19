@@ -1,4 +1,8 @@
-"""Deterministic graders: exact_match, unit_test, state_check, trace_check."""
+"""Deterministic graders: exact_match, unit_test, state_check, trace_check.
+
+Each takes the :class:`GradeInput` and the grader's spec from task.yaml and returns the result dict built by
+:func:`_result`. They never call a model, so the same input always gives the same grade.
+"""
 from __future__ import annotations
 
 import importlib.util
@@ -28,6 +32,11 @@ def _result(checks: list[dict[str, Any]]) -> dict[str, Any]:
 
 # ---------------------------------------------------------------- exact_match
 def _normalise(s: str, steps: list[str]) -> str:
+    """Apply the named clean-up steps to a string, in a fixed order, before comparing answers.
+
+    Steps: last_line (keep only the last non-empty line), trim, lower, strip_punct (drop everything except
+    word characters, spaces and . , -), collapse_ws (runs of whitespace become one space).
+    """
     s = s or ""
     if "last_line" in steps:
         lines = [x for x in s.strip().splitlines() if x.strip()]
@@ -44,7 +53,12 @@ def _normalise(s: str, steps: list[str]) -> str:
 
 
 def exact_match(inp: "GradeInput", spec: dict[str, Any]) -> dict[str, Any]:
-    """spec: expected (str or list of accepted strings), normalize (list), mode: equals | contains | number"""
+    """Compare the final answer with the expected value(s).
+
+    spec: expected (str or list of accepted strings), normalize (list of steps), mode: equals | contains | number.
+    In "number" mode every number found in the answer (thousands separators removed) is compared with each
+    expected value within ``tolerance``, so "about 1,234.5 units" matches 1234.5.
+    """
     steps = spec.get("normalize", ["trim", "lower", "collapse_ws"])
     mode = spec.get("mode", "equals")
     answer = _normalise(inp.final_answer, steps)
@@ -65,14 +79,19 @@ def exact_match(inp: "GradeInput", spec: dict[str, Any]) -> dict[str, Any]:
 # ---------------------------------------------------------------- unit_test
 def unit_test(inp: "GradeInput", spec: dict[str, Any]) -> dict[str, Any]:
     """Copies hidden tests (grader/tests by default) next to a COPY of the workspace and runs unittest.
-    The agent never saw these tests."""
+
+    The agent never saw these tests. Working on a copy keeps test side effects out of the real workspace.
+    Pass/fail comes from unittest's exit code; the "Ran N tests" and "FAILED (failures=.., errors=..)" lines of its
+    output are parsed only to report a partial score of passed tests out of the tests that ran.
+    """
     tests_dir = inp.task_dir / spec.get("tests", "grader/tests")
     with tempfile.TemporaryDirectory() as tmp:
         work = Path(tmp) / "ws"
         shutil.copytree(inp.workspace, work)
         shutil.copytree(tests_dir, work / "_hidden_tests")
         p = subprocess.run([sys.executable, "-m", "unittest", "discover", "-s", "_hidden_tests", "-t", "."],
-                           cwd=work, capture_output=True, text=True, timeout=int(spec.get("timeout_s", 120)))
+                           cwd=work, capture_output=True, text=True, timeout=int(spec.get("timeout_s", 120)),
+                           check=False)
     out = p.stderr + p.stdout
     m = re.search(r"Ran (\d+) tests?", out)
     ran = int(m.group(1)) if m else 0
@@ -88,7 +107,10 @@ def unit_test(inp: "GradeInput", spec: dict[str, Any]) -> dict[str, Any]:
 # ---------------------------------------------------------------- state_check
 def state_check(inp: "GradeInput", spec: dict[str, Any]) -> dict[str, Any]:
     """Runs the task's own check script: def check(workspace: Path, final_answer: str) -> list[dict]
-    Each dict: {name, passed, detail?, must? (default True)}."""
+
+    Each dict: {name, passed, detail?, must? (default True)}. The script is loaded under a unique module name
+    derived from the task id so graders from different tasks cannot clash.
+    """
     script = inp.task_dir / spec.get("script", "grader/check.py")
     mod_name = f"_check_{inp.task.get('id', 'task').replace('-', '_')}"
     s = importlib.util.spec_from_file_location(mod_name, script)
@@ -100,9 +122,11 @@ def state_check(inp: "GradeInput", spec: dict[str, Any]) -> dict[str, Any]:
 
 # ---------------------------------------------------------------- trace_check
 def trace_check(inp: "GradeInput", spec: dict[str, Any]) -> dict[str, Any]:
-    """Assertions about what the agent DID, read from the normalised trace.
+    """Assertions about what the agent DID, read from the normalised trace (not what it said).
+
     spec.assert: list of {tool_used: name} | {tool_not_used: name} | {event: type}
-                 | {command_contains: text} (any bash command containing text)"""
+                 | {command_contains: text} (any tool call whose arguments contain the text)
+    """
     calls = [e for e in inp.events if e.get("type") == "tool_call"]
     tool_names = [e["payload"].get("tool") for e in calls]
     checks = []

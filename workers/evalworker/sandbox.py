@@ -33,14 +33,23 @@ PASSTHROUGH_ENV = ("CLAUDE_CODE_OAUTH_TOKEN",)
 
 @dataclass
 class SandboxOutcome:
+    """How a sandbox run ended, as far as the infrastructure is concerned (not whether the agent succeeded)."""
+
     ok: bool                 # False = infrastructure failure (couldn't start, killed by OOM, ...)
     timed_out: bool = False
     detail: str = ""
 
 
 class LocalSandbox:
+    """Runs the harness as a subprocess of the worker: no isolation, for development and the baseline harness."""
+
     def run(self, harness: str, ctx_path: Path, workspace: Path, timeout_s: int,
-            extra_rw: tuple[Path, ...] = ()) -> SandboxOutcome:
+            extra_rw: tuple[Path, ...] = ()) -> SandboxOutcome:  # pylint: disable=unused-argument
+        """Run ``evalworker.adapters.run`` for the trial and wait for it (``extra_rw`` is only needed by Docker).
+
+        The process gets 30 s beyond the trial timeout because the harness enforces the timeout itself and
+        needs a moment to write its result files; only a process that outlives that is killed here.
+        """
         # HARNESS_PYTHONPATH lets a locally installed harness (e.g. a Hermes checkout) be found.
         extra = os.environ.get("HARNESS_PYTHONPATH", "")
         env = {**os.environ, "PYTHONPATH": os.pathsep.join(p for p in [str(WORKERS_ROOT), extra] if p)}
@@ -49,15 +58,19 @@ class LocalSandbox:
         with log_file.open("w") as lf:
             try:
                 p = subprocess.run([sys.executable, "-m", "evalworker.adapters.run", str(ctx_path), harness],
-                                   cwd=workspace, env=env, stdout=lf, stderr=subprocess.STDOUT, timeout=timeout_s + 30)
+                                   cwd=workspace, env=env, stdout=lf, stderr=subprocess.STDOUT,
+                                   timeout=timeout_s + 30, check=False)
             except subprocess.TimeoutExpired:
                 return SandboxOutcome(ok=True, timed_out=True, detail="killed after timeout")
         return SandboxOutcome(ok=p.returncode == 0, detail=f"exit {p.returncode}")
 
 
 class DockerSandbox:
+    """Runs each trial in its own container from the harness image (see the module docstring)."""
+
     def __init__(self):
-        import docker  # only needed in docker mode
+        """Connect to the Docker daemon and read the network / volume names from the environment."""
+        import docker  # pylint: disable=import-outside-toplevel  # only needed in docker mode
 
         self.client = docker.from_env()
         self.network = os.environ.get("SANDBOX_NETWORK", "aep_sandbox")
@@ -68,7 +81,7 @@ class DockerSandbox:
         """Mounts for one trial: its own folder, plus any extra folder it must share (the memory home of a
         "carry" chain). Each is mounted at its own path, so the paths in ctx.json stay valid. Nothing else
         under the trials root is visible."""
-        from docker.types import Mount
+        from docker.types import Mount  # pylint: disable=import-outside-toplevel
 
         mounts = []
         if self.volume:  # named volume shared with the worker: expose only this sub-folder of it
@@ -83,7 +96,15 @@ class DockerSandbox:
 
     def run(self, harness: str, ctx_path: Path, workspace: Path, timeout_s: int,
             extra_rw: tuple[Path, ...] = ()) -> SandboxOutcome:
-        import docker
+        """Start the trial's container, wait for it, save its log, and always remove it.
+
+        The container is limited to 1 CPU and 2 GB. Harnesses in ``DIRECT`` call their provider themselves, so
+        they run on a network with internet access and receive their subscription token; all others run on the
+        internal network that only reaches the gateway. A container that exceeds the timeout is killed and
+        reported as timed out (not as an infrastructure failure, since the agent just ran out of time); exit code
+        137 without a timeout means the kernel killed it, most likely for exceeding the memory limit.
+        """
+        import docker  # pylint: disable=import-outside-toplevel
 
         image = IMAGES[harness]
         mounts = self.mounts(ctx_path.parent, extra_rw)
@@ -102,7 +123,7 @@ class DockerSandbox:
             try:
                 status = container.wait(timeout=timeout_s + 30)
                 timed_out = False
-            except Exception:  # noqa: BLE001 - requests ReadTimeout
+            except Exception:  # pylint: disable=broad-exception-caught  # requests' ReadTimeout on wait()
                 container.kill()
                 status, timed_out = {"StatusCode": -1}, True
             (ctx_path.parent / "native").mkdir(exist_ok=True)
@@ -119,10 +140,11 @@ class DockerSandbox:
             if container is not None:
                 try:
                     container.remove(force=True)
-                except Exception:  # noqa: BLE001
+                except Exception:  # pylint: disable=broad-exception-caught  # best-effort cleanup
                     pass
 
 
 def make_sandbox():
+    """Pick the sandbox from SANDBOX_MODE: "docker" for real isolation, otherwise a local subprocess."""
     mode = os.environ.get("SANDBOX_MODE", "local")
     return DockerSandbox() if mode == "docker" else LocalSandbox()

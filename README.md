@@ -92,6 +92,7 @@ install it and set `HARNESS_PYTHONPATH` to the Hermes checkout.
 ```bash
 cd workers && python -m pytest -q          # worker end-to-end tests with a fake model (no keys, no Docker)
 python scripts/validate_tasks.py           # every grader: reference must pass, negatives must fail
+pylint --rcfile=.pylintrc workers scripts tasks   # style check of all Python code (scores 10.00/10)
 cd apps/api && npm install && npm test     # statistics: bootstrap, McNemar, Fisher, A/A false-positive rate
 ```
 

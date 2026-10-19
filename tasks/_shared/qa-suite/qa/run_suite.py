@@ -14,15 +14,18 @@ EXPECTED_REPORT = '{\n  "suite": "nightly-4",\n  "tests": 4,\n  "total": 391\n}\
 
 
 def test_math():
+    """A calculation with a known answer."""
     assert 17 * 23 == 391, "17 * 23 should be 391"
 
 
 def test_read_file():
+    """Read an existing data file and check its exact contents."""
     lines = (HERE / "data" / "sample.txt").read_text().splitlines()
     assert lines == ["alpha", "beta", "gamma"], f"unexpected contents: {lines}"
 
 
 def test_json_report():
+    """Create a JSON file and check its format is exact: 2-space indent and a trailing newline."""
     out = HERE / "out"
     out.mkdir(exist_ok=True)
     report = {"suite": SUITE, "tests": 4, "total": 17 * 23}
@@ -32,9 +35,11 @@ def test_json_report():
 
 
 def test_string():
+    """Reverse a string and join its characters with hyphens."""
     assert "-".join(reversed("abc")) == "c-b-a"
 
 
+# Run in this order; each test either returns quietly (pass) or raises AssertionError (fail).
 TESTS = [test_math, test_read_file, test_json_report, test_string]
 
 if __name__ == "__main__":

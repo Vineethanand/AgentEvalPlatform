@@ -1,0 +1,24 @@
+[MAIN]
+# Task fixtures, reference solutions and negatives are deliberately tiny or deliberately wrong sample
+# data for the agents; they are not project code and are not linted.
+ignore-paths=^tasks/.*/(fixtures|reference|negatives)/.*$
+init-hook='import sys; sys.path[:0] = ["workers", "workers/tests"]'
+
+[FORMAT]
+max-line-length=120
+
+[BASIC]
+# Short names are used for tiny scopes (exceptions, paths, loop variables); docstrings explain the rest.
+good-names=e,p,t,d,k,v,i,s,f,m,c,h,g,u,a,b,ev,tid,ts,id,db
+
+[DESIGN]
+max-args=10
+max-locals=30
+max-statements=80
+max-branches=20
+
+[MESSAGES CONTROL]
+# Design-style checks that do not fit this codebase: TrialContext is a plain data record with many fields,
+# adapters/graders are small by design, the OpenAI-style chat() mirrors the HTTP API's many options, and the
+# per-task grader scripts intentionally repeat a few helper lines so each task folder stays self-contained.
+disable=too-many-instance-attributes,too-few-public-methods,too-many-positional-arguments,duplicate-code
