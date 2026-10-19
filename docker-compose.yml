@@ -72,12 +72,14 @@ services:
       TRIALS_DIR: /data/trials
       SANDBOX_MODE: docker
       SANDBOX_NETWORK: aep_sandbox
+      SANDBOX_NETWORK_CLAUDE_CODE: aep_egress
       TRIALS_VOLUME: aep_trialdata
     volumes:
       - ./tasks:/tasks:ro
       - trialdata:/data
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on: [api, redis, gateway]
+    networks: [default, egress]
 
   # Harness images are only built here; workers start them per trial.
   harness-baseline:
@@ -85,6 +87,14 @@ services:
       context: .
       dockerfile: harnesses/baseline/Dockerfile
     image: aep/harness-baseline:latest
+    entrypoint: ["true"]
+    profiles: ["build"]
+
+  harness-claude-code:
+    build:
+      context: .
+      dockerfile: harnesses/claude-code/Dockerfile
+    image: aep/harness-claude-code:latest
     entrypoint: ["true"]
     profiles: ["build"]
 
@@ -107,3 +117,6 @@ networks:
   sandbox:
     name: aep_sandbox
     internal: true
+  # Claude Code talks to Anthropic directly (subscription auth), so it needs real egress.
+  egress:
+    name: aep_egress

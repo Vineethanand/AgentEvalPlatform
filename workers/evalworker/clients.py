@@ -11,6 +11,10 @@ import requests
 log = logging.getLogger(__name__)
 
 
+class TrialGone(Exception):
+    """The trial no longer exists (its experiment was stopped and the unstarted trials deleted)."""
+
+
 class ApiClient:
     """Talks to the NestJS API's internal endpoints. Retries on network errors."""
 
@@ -24,6 +28,8 @@ class ApiClient:
         for i in range(5):
             try:
                 r = self.s.request(method, f"{self.base}/internal/trials{path}", timeout=60, **kw)
+                if r.status_code == 404:
+                    raise TrialGone(path)
                 r.raise_for_status()
                 return r.json() if r.content else {}
             except requests.RequestException as e:

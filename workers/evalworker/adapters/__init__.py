@@ -9,4 +9,7 @@ def get_adapter(name: str) -> HarnessAdapter:
     if name == "hermes":
         from .hermes import HermesAdapter
         return HermesAdapter()
+    if name == "claude-code":
+        from .claude_code import ClaudeCodeAdapter
+        return ClaudeCodeAdapter()
     raise KeyError(f"unknown harness {name!r}")

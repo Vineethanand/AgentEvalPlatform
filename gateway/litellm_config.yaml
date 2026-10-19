@@ -7,9 +7,20 @@ model_list:
     litellm_params:
       model: anthropic/claude-sonnet-4-5
       api_key: os.environ/ANTHROPIC_API_KEY
+      extra_headers: {"anthropic-workspace-id": "wrkspc_01QyB8NMT7Gdfd3WRo3PwcjP"}
     model_info:
       price_input_per_mtok: 3.00
       price_output_per_mtok: 15.00
+      provider: anthropic
+
+  - model_name: claude-haiku
+    litellm_params:
+      model: anthropic/claude-haiku-4-5
+      api_key: os.environ/ANTHROPIC_API_KEY
+      extra_headers: {"anthropic-workspace-id": "wrkspc_01QyB8NMT7Gdfd3WRo3PwcjP"}
+    model_info:
+      price_input_per_mtok: 1.00
+      price_output_per_mtok: 5.00
       provider: anthropic
 
   - model_name: gpt-mini
@@ -58,6 +69,30 @@ model_list:
     litellm_params:
       model: ollama_chat/qwen2.5:7b
       api_base: http://host.docker.internal:11434
+    model_info:
+      price_input_per_mtok: 0
+      price_output_per_mtok: 0
+      provider: ollama
+      open_weight: true
+
+  # Smaller/faster local model for plumbing tests on CPU (`ollama pull qwen2.5:1.5b`). Weak at tool calling.
+  - model_name: ollama-qwen-1.5b
+    litellm_params:
+      model: ollama_chat/qwen2.5:1.5b
+      api_base: http://host.docker.internal:11434
+      num_ctx: 16384
+    model_info:
+      price_input_per_mtok: 0
+      price_output_per_mtok: 0
+      provider: ollama
+      open_weight: true
+
+  # Mid-size local model (`ollama pull qwen2.5:3b`). Slow on CPU; still weak at tool calling.
+  - model_name: ollama-qwen-3b
+    litellm_params:
+      model: ollama_chat/qwen2.5:3b
+      api_base: http://host.docker.internal:11434
+      num_ctx: 16384
     model_info:
       price_input_per_mtok: 0
       price_output_per_mtok: 0

@@ -20,7 +20,13 @@ WORKERS_ROOT = Path(__file__).resolve().parent.parent
 IMAGES = {
     "baseline": os.environ.get("IMAGE_BASELINE", "aep/harness-baseline:latest"),
     "hermes": os.environ.get("IMAGE_HERMES", "aep/harness-hermes:latest"),
+    "claude-code": os.environ.get("IMAGE_CLAUDE_CODE", "aep/harness-claude-code:latest"),
 }
+
+# Harnesses that call their provider directly (subscription auth) instead of the gateway:
+# they get a network with real egress and the token passed through from the worker env.
+DIRECT = {"claude-code"}
+PASSTHROUGH_ENV = ("CLAUDE_CODE_OAUTH_TOKEN",)
 
 
 @dataclass
@@ -61,13 +67,17 @@ class DockerSandbox:
         image = IMAGES[harness]
         volumes = {self.volume: {"bind": self.data_root, "mode": "rw"}} if self.volume \
             else {str(Path(self.data_root).resolve()): {"bind": self.data_root, "mode": "rw"}}
+        network = os.environ.get("SANDBOX_NETWORK_CLAUDE_CODE", "aep_egress") if harness in DIRECT else self.network
+        env = {"PYTHONUNBUFFERED": "1"}
+        if harness in DIRECT:
+            env.update({k: os.environ[k] for k in PASSTHROUGH_ENV if os.environ.get(k)})
         container = None
         try:
             container = self.client.containers.run(
                 image, command=["python", "-m", "evalworker.adapters.run", str(ctx_path), harness],
-                working_dir=str(workspace), volumes=volumes, network=self.network,
+                working_dir=str(workspace), volumes=volumes, network=network,
                 mem_limit="2g", nano_cpus=1_000_000_000, detach=True,
-                environment={"PYTHONUNBUFFERED": "1"},
+                environment=env,
             )
             try:
                 status = container.wait(timeout=timeout_s + 30)
@@ -78,9 +88,11 @@ class DockerSandbox:
             (ctx_path.parent / "native").mkdir(exist_ok=True)
             (ctx_path.parent / "native" / "container.log").write_bytes(container.logs())
             code = status.get("StatusCode", -1)
+            tail = container.logs(tail=15).decode(errors="replace").strip()[-1500:]
             if code == 137 and not timed_out:
                 return SandboxOutcome(ok=False, detail="container killed (out of memory?)")
-            return SandboxOutcome(ok=code == 0 or timed_out, timed_out=timed_out, detail=f"exit {code}")
+            return SandboxOutcome(ok=code == 0 or timed_out, timed_out=timed_out,
+                                  detail=f"exit {code}" + ("\n" + tail if code != 0 and tail else ""))
         except docker.errors.DockerException as e:
             return SandboxOutcome(ok=False, detail=f"docker error: {e}")
         finally:

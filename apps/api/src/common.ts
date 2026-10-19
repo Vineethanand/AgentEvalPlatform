@@ -38,6 +38,7 @@ export function hashDir(dir: string, skip: string[] = []): string {
 export const HARNESSES: Record<string, { image: string; capabilities: string[] }> = {
   baseline: { image: 'aep/harness-baseline:latest', capabilities: ['tools', 'temperature', 'max_steps', 'memory', 'skills'] },
   hermes: { image: 'aep/harness-hermes:latest', capabilities: ['tools', 'temperature', 'max_steps', 'memory', 'skills'] },
+  'claude-code': { image: 'aep/harness-claude-code:latest', capabilities: ['tools', 'max_steps', 'memory', 'skills'] },
 };
 
 export interface ModelEntry {

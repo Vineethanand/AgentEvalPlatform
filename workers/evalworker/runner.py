@@ -17,10 +17,10 @@ from pathlib import Path
 from typing import Any
 
 from .adapters.base import TrialContext
-from .clients import ApiClient, GatewayClient
+from .clients import ApiClient, GatewayClient, TrialGone
 from .failure_rules import classify
 from .graders import GradeInput, grade_all, primary
-from .sandbox import make_sandbox
+from .sandbox import DIRECT, make_sandbox
 
 log = logging.getLogger(__name__)
 
@@ -41,6 +41,8 @@ class Runner:
         for tid in trial_ids:
             try:
                 self.run_trial(tid, chain_home if len(trial_ids) > 1 else None)
+            except TrialGone:
+                log.info("trial %s was removed (experiment stopped), skipping", tid)
             except Exception as e:  # noqa: BLE001 - mark it and move on; /resume re-runs it
                 log.exception("trial %s failed with an infrastructure error", tid)
                 try:
@@ -84,13 +86,13 @@ class Runner:
         p_in = float(snap.get("priceInputPerMtok") or 0) / 1e6
         p_out = float(snap.get("priceOutputPerMtok") or 0) / 1e6
         budget_usd = max(0.05, int(settings.get("max_tokens_total", 200_000)) * max(p_in, p_out) * 1.2)
-        key = self.gw.mint_key(trial_id, config["modelAlias"], budget_usd)
+        key = None if config["harness"] in DIRECT else self.gw.mint_key(trial_id, config["modelAlias"], budget_usd)
 
         timeout_s = int(task.get("timeout_s") or settings.get("timeout_s") or 600)
         ctx = TrialContext(
             trial_id=trial_id, attempt=attempt, prompt=task["prompt"], workspace=workspace, home=home,
             trial_dir=tdir, model=config["modelAlias"], gateway_url=self.sandbox_gateway,
-            api_key=key or self.gw.master, seed=int(trial["seed"]), settings=settings,
+            api_key="" if config["harness"] in DIRECT else (key or self.gw.master), seed=int(trial["seed"]), settings=settings,
             skills_dir=skills_src, deadline=time.time() + timeout_s,
         )
         ctx_path = tdir / "ctx.json"

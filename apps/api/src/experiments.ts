@@ -160,11 +160,11 @@ export class ExperimentsService {
     return { requeued: toRun.length };
   }
 
-  /** Stop: clear queued work. Trials already running on a worker finish on their own. */
+  /** Stop: unstarted trials are deleted, not kept. Trials already running on a worker finish on their own. */
   async cancel(id: string) {
     await this.get(id);
     const cleared = await this.queue.clear(id);
-    const { affected } = await this.trials.update({ experimentId: id, status: 'queued' }, { status: 'cancelled' });
+    const { affected } = await this.trials.delete({ experimentId: id, status: 'queued' });
     await this.experiments.update(id, { status: 'cancelled' });
     const running = await this.trials.count({ where: { experimentId: id, status: 'running' } });
     return { ok: true, jobsCleared: cleared, trialsCancelled: affected ?? 0, stillRunning: running };
