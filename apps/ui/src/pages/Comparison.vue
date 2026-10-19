@@ -25,12 +25,12 @@ const counts = computed(() => {
 const canStop = computed(() => (counts.value.queued ?? 0) + (counts.value.running ?? 0) > 0 && detail.value?.experiment.status !== 'cancelled');
 const canResume = computed(() => ['infra_error', 'harness_error', 'cancelled', 'queued', 'running'].some((s) => counts.value[s]) && !canStop.value);
 async function act(kind: 'cancel' | 'resume') {
-  if (kind === 'cancel' && !window.confirm('Stop this experiment and clear the queue? Trials already running will finish; finished results are kept.')) return;
+  if (kind === 'cancel' && !window.confirm('Stop this experiment and clear the queue? Unstarted trials are removed; trials already running will finish and keep their results.')) return;
   busy.value = true; note.value = '';
   try {
     const r = await post(`/experiments/${props.id}/${kind}`, {});
     note.value = kind === 'cancel'
-      ? `Stopped: ${r.trialsCancelled} queued trial(s) cancelled${r.stillRunning ? `, ${r.stillRunning} still finishing` : ''}.`
+      ? `Stopped: ${r.trialsCancelled} unstarted trial(s) removed${r.stillRunning ? `, ${r.stillRunning} still finishing` : ''}.`
       : `Re-queued ${r.requeued} trial(s).`;
     clearInterval(timer); timer = window.setInterval(load, 3000);
     await load();

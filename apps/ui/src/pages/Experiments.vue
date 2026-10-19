@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue';
-import { api } from '../api';
+import { api, post } from '../api';
 
 const experiments = ref<any[]>([]);
 let timer: number | undefined;
@@ -12,6 +12,13 @@ async function remove(e: any) {
   if (!window.confirm(`Delete experiment "${e.name}" and all its trials? This cannot be undone.`)) return;
   error.value = '';
   try { await api(`/experiments/${e.id}`, { method: 'DELETE' }); await load(); }
+  catch (err: any) { error.value = err.message; }
+}
+const active = (e: any) => ((e.progress.queued ?? 0) + (e.progress.running ?? 0)) > 0 && e.status !== 'cancelled';
+async function stop(e: any) {
+  if (!window.confirm(`Stop "${e.name}" and clear its queue? Unstarted trials are removed; trials already running will finish and keep their results.`)) return;
+  error.value = '';
+  try { await post(`/experiments/${e.id}/cancel`, {}); await load(); }
   catch (err: any) { error.value = err.message; }
 }
 const total = (p: Record<string, number>) => Object.values(p).reduce((s, n) => s + n, 0);
@@ -34,7 +41,10 @@ const total = (p: Record<string, number>) => Object.values(p).reduce((s, n) => s
         </td>
         <td>{{ e.nTrials }}</td>
         <td class="muted">{{ new Date(e.createdAt).toLocaleString() }}</td>
-        <td><button @click="remove(e)">Delete</button></td>
+        <td style="white-space: nowrap">
+          <button v-if="active(e)" class="danger" @click="stop(e)">Stop</button>
+          <button @click="remove(e)">Delete</button>
+        </td>
       </tr>
       <tr v-if="!experiments.length"><td colspan="6" class="muted">No experiments yet. Create configs, then a new experiment.</td></tr>
     </table>
