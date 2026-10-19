@@ -141,6 +141,24 @@ Assumption: Claude Code credentials are available and Haiku was run through the 
 Claude or OpenAI models you would need API credit on those accounts. Anthropic API keys also need
 `anthropic-workspace-id` set on the model in `gateway/litellm_config.yaml`.
 
+### How cost is calculated (and what was actually used so far)
+
+Because no Anthropic or OpenAI API credit is available, **cost was not measured in real time in any run so far**.
+The figures in the reports are token counts multiplied by the fixed per-million-token prices in
+`gateway/litellm_config.yaml` (hardcoded example prices, snapshotted into each config version). Local Ollama models
+are priced at 0. The Claude Code runs used the same price table, not what Anthropic actually billed.
+
+The code already supports real measurement; it only needs credit on a provider account. For each trial the worker
+picks the first source that has data:
+
+1. the gateway's spend log for the trial's own virtual key (real tokens and the provider's priced cost, per call);
+2. the cost the harness reports itself (the Claude Code CLI's `total_cost_usd`, now saved in the trial result);
+3. tokens x the price snapshot in the config (the fallback used so far).
+
+Full traces (every model call, tool call and result, memory read/write) are collected on every run regardless of cost.
+Once credit is added, run an experiment and cost, tokens and traces will all come from real usage with no code change.
+Until then, treat all cost numbers as estimates.
+
 ### Using local Ollama models
 
 1. `ollama pull qwen2.5:1.5b` (and/or `qwen2.5:3b`), with `ollama serve` running on the host.

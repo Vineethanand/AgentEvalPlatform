@@ -122,6 +122,8 @@ class ClaudeCodeAdapter(HarnessAdapter):
             result.tokens_in = (int(usage.get("input_tokens") or 0) + int(usage.get("cache_read_input_tokens") or 0)
                                 + int(usage.get("cache_creation_input_tokens") or 0))
             result.tokens_out = int(usage.get("output_tokens") or 0)
+            if final.get("total_cost_usd") is not None:
+                result.cost_usd = float(final["total_cost_usd"])
             result.steps = int(final.get("num_turns") or result.steps)
             sub = final.get("subtype", "")
             if sub == "error_max_turns":

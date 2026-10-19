@@ -67,6 +67,7 @@ class RunResult:
     steps: int = 0
     tokens_in: int = 0      # as reported by the harness; the gateway's numbers win when available
     tokens_out: int = 0
+    cost_usd: float | None = None   # cost the harness itself reports (Claude Code's CLI does); used when there is no gateway spend log
     error: str | None = None
 
 

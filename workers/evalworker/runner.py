@@ -119,7 +119,14 @@ class Runner:
         usage = self.gw.usage(key) if key else None
         tokens_in = usage["tokens_in"] if usage else int(result.get("tokens_in") or 0)
         tokens_out = usage["tokens_out"] if usage else int(result.get("tokens_out") or 0)
-        cost = usage["cost_usd"] if usage and usage["cost_usd"] > 0 else tokens_in * p_in + tokens_out * p_out
+        # Cost, best source first: the gateway's spend log for this trial's key (real provider usage), then the
+        # cost the harness itself reports (Claude Code CLI), then tokens x the price snapshot in the config.
+        if usage and usage["cost_usd"] > 0:
+            cost = usage["cost_usd"]
+        elif result.get("cost_usd"):
+            cost = float(result["cost_usd"])
+        else:
+            cost = tokens_in * p_in + tokens_out * p_out
 
         grades: list[dict[str, Any]] = []
         passed = None
