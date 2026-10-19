@@ -128,11 +128,14 @@ the verdict is withheld until you `POST /experiments/:id/resume`.
 
 | Harness | Model | Result |
 | --- | --- | --- |
-| Hermes | `claude-haiku` through the gateway with an Anthropic API key (the key needs `anthropic-workspace-id` set in `gateway/litellm_config.yaml`, and the account needs API credit) | Verified working |
+| Claude Code | Claude Haiku, run against several tasks using the Claude Code credentials (`CLAUDE_CODE_OAUTH_TOKEN`) | Works. This path calls Anthropic directly and does not use the gateway or an API key |
+| Hermes | Paid models (`claude-haiku`, `claude-sonnet`, `gpt-mini`) | **Not run.** There is no Anthropic or OpenAI API credit for the gateway, so no model that needs credits has been run through Hermes |
 | Hermes | Free OpenRouter models (`laguna-xs-free`, `inkling-small-free`) | Works, but the free tier's daily request limit (50/day) was hit after only a few experiments. `inkling-small-free` is also refused by OpenRouter outside its approved agentic harnesses |
-| Hermes | Local Ollama: `qwen2.5:1.5b` (`ollama-qwen-1.5b`) and `qwen2.5:3b` (`ollama-qwen-3b`), plus `qwen2.5:7b` (`ollama-qwen`) | Runs end to end through the gateway, but see the local-model notes below |
+| Hermes | Local Ollama: `qwen2.5:1.5b` (`ollama-qwen-1.5b`) and `qwen2.5:3b` (`ollama-qwen-3b`), plus `qwen2.5:7b` (`ollama-qwen`) | Runs end to end through the gateway. This confirms the Hermes harness itself works; see the local-model notes below for the quality limits |
 
-Also added: a `claude-code` harness (Claude Code CLI, subscription auth via `CLAUDE_CODE_OAUTH_TOKEN`).
+Assumption: Claude Code credentials are available and Haiku was run through the Claude Code harness. To run Hermes with
+Claude or OpenAI models you would need API credit on those accounts. Anthropic API keys also need
+`anthropic-workspace-id` set on the model in `gateway/litellm_config.yaml`.
 
 ### Using local Ollama models
 
@@ -173,7 +176,7 @@ Not yet verified:
 - The Hermes adapter's assumptions about its Python API are listed at the top of
   `workers/evalworker/adapters/hermes.py`. It now runs against the real Hermes image (see the table above),
   but not every assumption has been checked; for example the installed Hermes ignores the `temperature` setting.
-- The `claude-code` harness end to end.
+- Hermes with a paid model (Claude, GPT): no API credit was available.
 - The LLM judge's agreement with human labels (see `docs/README.md` for the calibration procedure).
 
 Simplifications versus the design document:
