@@ -55,7 +55,7 @@ export interface CreateExperimentBody {
   name: string;
   hypothesis?: string;
   taskIds?: string[];            // latest version of each; default = all synced tasks
-  configVersionIds: string[];    // 2 or more
+  configVersionIds: string[];    // exactly 2: A and B
   nTrials: number;
   nOverrides?: Record<string, number>;
   seed?: number;
@@ -75,7 +75,7 @@ export class ExperimentsService {
   ) {}
 
   async create(body: CreateExperimentBody) {
-    if (!body.configVersionIds || body.configVersionIds.length < 2) throw new BadRequestException('need at least 2 config versions');
+    if (!body.configVersionIds || body.configVersionIds.length !== 2) throw new BadRequestException('an experiment compares exactly 2 config versions');
     if (!(body.nTrials >= 1)) throw new BadRequestException('nTrials must be >= 1');
     const cvs = await this.configVersions.find({ where: { id: In(body.configVersionIds) } });
     if (cvs.length !== body.configVersionIds.length) throw new BadRequestException('unknown config version id');

@@ -16,6 +16,19 @@ async function load() {
   form.value.taskIds = tasks.value.map((t) => t.id);
 }
 
+const MAX_CONFIGS = 2;   // an experiment compares exactly A and B
+
+// Checkbox gate: selecting a config when two are already chosen un-selects the one chosen earliest,
+// so there are never more than two. The order of the list is the A / B order.
+function toggleConfig(id: string, checked: boolean) {
+  const ids = form.value.configVersionIds.filter((x) => x !== id);
+  if (checked) {
+    ids.push(id);
+    while (ids.length > MAX_CONFIGS) ids.shift();
+  }
+  form.value.configVersionIds = ids;
+}
+
 const versions = computed(() => configs.value.flatMap((c) => c.versions.map((v: any) => ({ ...v, label: `${c.name} v${v.version}` }))));
 
 // Rough estimate: assumed 40k input + 3k output tokens per trial; the pilot replaces these with measured numbers.
@@ -55,9 +68,11 @@ onMounted(load);
 
     <div class="grid2">
       <div>
-        <label>Configs to compare (first = A, second = B)</label>
+        <label>Configs to compare (pick exactly 2: first picked = A, second = B)</label>
+        <p class="muted" style="margin: 0 0 4px">Picking a third config un-selects the one you picked first.</p>
         <div v-for="v in versions" :key="v.id">
-          <input type="checkbox" :value="v.id" v-model="form.configVersionIds" /> {{ v.label }}
+          <input type="checkbox" :checked="form.configVersionIds.includes(v.id)"
+                 @change="toggleConfig(v.id, ($event.target as HTMLInputElement).checked)" /> {{ v.label }}
           <span class="muted">({{ v.harness }}, {{ v.modelAlias }}, memory {{ v.settings.memory?.mode }})</span>
         </div>
         <label>Trials per task (N)</label><input type="number" v-model.number="form.nTrials" min="1" />
@@ -67,6 +82,11 @@ onMounted(load);
       </div>
       <div>
         <label>Tasks</label>
+        <p style="margin: 0 0 4px">
+          <button type="button" @click="form.taskIds = tasks.map((t) => t.id)">Select all</button>
+          <button type="button" @click="form.taskIds = []" style="margin-left: 6px">Unselect all</button>
+          <span class="muted"> {{ form.taskIds.length }} of {{ tasks.length }} selected</span>
+        </p>
         <div v-for="t in tasks" :key="t.id">
           <input type="checkbox" :value="t.id" v-model="form.taskIds" /> {{ t.id }}
           <span class="muted">{{ t.tags.join(', ') }}</span>
@@ -79,7 +99,9 @@ onMounted(load);
       estimated cost <strong>${{ estimate.toFixed(2) }}</strong>
       <span class="muted">(assumes 40k in / 3k out tokens per trial)</span>
     </p>
-    <button class="primary" @click="launch" :disabled="form.configVersionIds.length < 2">Launch</button>
+    <button class="primary" @click="launch" :disabled="form.configVersionIds.length !== 2 || !form.taskIds.length">Launch</button>
+    <span class="muted" v-if="form.configVersionIds.length !== 2"> Select exactly 2 configs.</span>
+    <span class="muted" v-else-if="!form.taskIds.length"> Select at least 1 task.</span>
     <span class="bad" v-if="error"> {{ error }}</span>
   </div>
 </template>
