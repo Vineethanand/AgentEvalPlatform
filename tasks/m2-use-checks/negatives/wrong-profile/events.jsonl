@@ -1,1 +1,0 @@
-{"type": "tool_call", "payload": {"tool": "bash", "arguments": {"command": "python tools/check.py"}}}

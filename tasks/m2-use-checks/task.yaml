@@ -1,15 +1,14 @@
 id: m2-use-checks
-title: "Memory chain M2, step 2 (use): run the checks from memory"
+title: "Memory chain M2, step 2 (use): rerun the remembered check command"
 prompt: |
-  Run this project's checks the way we did last time and reply with the last line of their output,
-  and nothing else. Do not write any files.
+  Run the checks you ran last time.
 tags: [memory]
 chain: m2
 chain_order: 2
 timeout_s: 300
 graders:
-  - type: state_check
-    primary: true
   - type: trace_check
+    primary: true
     assert:
-      - command_contains: "--profile=ci-7"
+      - command_contains: "run_suite.py"
+      - command_contains: "--suite=nightly-4"

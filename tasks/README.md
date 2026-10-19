@@ -62,7 +62,7 @@ graders:
 | unanswerable-from-docs | reasoning | exact_match ("cannot determine") | hallucination |
 | invoice-house-format | skill | state_check | skill: the format exists only in the `invoice-format` skill; file-edit |
 | m1-teach-units → m1-use-units | memory chain | state_check | memory: a stated preference (km, one decimal) |
-| m2-teach-checks → m2-use-checks | memory chain | state_check + trace_check | memory: a check command only documented in the teach task |
+| m2-teach-checks → m2-use-checks | memory chain | trace_check | memory: the teach task is told to run a custom suite (`qa/run_suite.py --suite=nightly-4`); the use task only says "run the checks you ran last time", with no path, flag or expected result |
 | postmortem-from-logs | writing | llm_judge (rubric) | open-ended output |
 | tile-defect | data | state_check | control: find the one wrong pixel in a repeating tile |
 | job-schedule | data | state_check | control: order jobs across time zones, peak concurrency |

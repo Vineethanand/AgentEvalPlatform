@@ -1,1 +1,0 @@
-error: unknown or missing profile. See the team's contributing guide.

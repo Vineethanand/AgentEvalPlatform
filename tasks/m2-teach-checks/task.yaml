@@ -1,8 +1,9 @@
 id: m2-teach-checks
-title: "Memory chain M2, step 1 (teach): discover how checks run"
+title: "Memory chain M2, step 1 (teach): run a custom check suite"
 prompt: |
-  Find out how this project's checks are meant to be run (read the docs), run them, and tell me
-  whether they pass. Remember the exact command for next time.
+  This project has a custom check suite at qa/run_suite.py. Run it with the argument --suite=nightly-4.
+  The expected result is the line "SUITE nightly-4: 12 passed, 0 failed" and exit code 0. Run it, confirm
+  you got that result, and remember the exact command for next time.
 tags: [memory]
 scored: false
 chain: m2
@@ -12,4 +13,5 @@ graders:
   - type: trace_check
     primary: true
     assert:
-      - command_contains: "--profile=ci-7"
+      - command_contains: "run_suite.py"
+      - command_contains: "--suite=nightly-4"

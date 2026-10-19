@@ -92,21 +92,21 @@ class RunnerTests(unittest.TestCase):
             tool_msgs = [m for m in messages if m["role"] == "tool"]
             prompt = messages[1]["content"]
             has_notes = "persistent notes" in messages[0]["content"]
-            if "Find out how" in prompt:  # teach task: read the docs, run the command, save it if possible
+            if "custom check suite" in prompt:  # teach task: run the command, save it if possible
                 if not tool_msgs:
-                    return tool_call("bash", {"command": "python tools/check.py --profile=ci-7"})
+                    return tool_call("bash", {"command": "python qa/run_suite.py --suite=nightly-4"})
                 if has_notes and len(tool_msgs) == 1:
-                    return tool_call("notes_write", {"key": "checks", "value": "python tools/check.py --profile=ci-7"}, "c2")
-                return {"content": "Checks pass."}
+                    return tool_call("notes_write", {"key": "checks", "value": "python qa/run_suite.py --suite=nightly-4"}, "c2")
+                return {"content": "SUITE nightly-4: 12 passed, 0 failed"}
             # use task: no docs in the workspace this time
             if has_notes:
                 if not tool_msgs:
                     return tool_call("notes_read", {})
-                if len(tool_msgs) == 1 and "ci-7" in tool_msgs[0]["content"]:
-                    return tool_call("bash", {"command": "python tools/check.py --profile=ci-7 | tail -n 1 > checks.txt"}, "c3")
+                if len(tool_msgs) == 1 and "nightly-4" in tool_msgs[0]["content"]:
+                    return tool_call("bash", {"command": "python qa/run_suite.py --suite=nightly-4"}, "c3")
                 return {"content": "done"}
             if not tool_msgs:  # without memory the agent can only guess the command
-                return tool_call("bash", {"command": "python tools/check.py | tail -n 1 > checks.txt"}, "c4")
+                return tool_call("bash", {"command": "python qa/run_suite.py"}, "c4")
             return {"content": "done"}
 
         server = FakeModelServer(script)
