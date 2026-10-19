@@ -1,0 +1,13 @@
+id: json-diff
+title: Compare two JSON documents
+prompt: |
+  old.json and new.json in your workspace are two versions of the same object. Reply with only a JSON object
+  with three keys: "added" (top-level keys only in new.json), "removed" (top-level keys only in old.json) and
+  "changed" (top-level keys in both whose value differs at any depth). Each value is a list of key names
+  sorted alphabetically. Do not write any files.
+tags: [tool-use, data, control]
+timeout_s: 300
+graders:
+  - type: state_check
+    primary: true
+    script: grader/check.py

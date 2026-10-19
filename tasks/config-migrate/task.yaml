@@ -1,9 +1,8 @@
 id: config-migrate
 title: Migrate a JSON config to v2
 prompt: |
-  config.json uses schema v1. Convert it to v2 following MIGRATION.md exactly. Do not edit the
-  file: reply with only the resulting v2 JSON object.
-tags: [files, control]
+  config.json uses schema v1. Convert it in place to v2 following MIGRATION.md exactly.
+tags: [files, control, file-edit]
 timeout_s: 300
 graders:
   - type: state_check

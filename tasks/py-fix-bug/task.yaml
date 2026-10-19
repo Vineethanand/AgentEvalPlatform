@@ -3,11 +3,10 @@ title: Fix a bug in a date-range helper
 prompt: |
   daterange.py has a function days_between(start, end) that should return the number of whole days
   from start to end (ISO dates, end exclusive; negative if end is before start). Users report wrong
-  answers across month boundaries. Find the bug. Do not edit the file: reply with the complete corrected
-  contents of daterange.py in one ```python code block. Keep the function signature.
-tags: [coding, control]
+  answers across month boundaries. Fix the bug. Keep the function signature.
+tags: [coding, control, file-edit]
 timeout_s: 400
 graders:
-  - type: state_check
+  - type: unit_test
     primary: true
-    script: grader/check.py
+    tests: grader/tests

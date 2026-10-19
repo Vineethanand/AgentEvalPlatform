@@ -216,7 +216,8 @@ export class ExperimentsService {
   /**
    * The comparison page. A = first config, B = second (or pass ?a=&b=).
    * Only scored trials count; infra failures are excluded from BOTH sides of a pair.
-   * ?tag=memory limits to tasks with that tag, ?excludeTag=memory to the rest.
+   * ?tag=memory limits to tasks with that tag, ?excludeTag=memory to the rest. Both take a comma-separated list:
+   * ?tag=a,b keeps tasks with a or b, ?excludeTag=a,b drops tasks with a or b.
    */
   async comparison(id: string, a?: string, b?: string, tag?: string, excludeTag?: string) {
     const exp = await this.get(id);
@@ -224,8 +225,14 @@ export class ExperimentsService {
     const B = b ?? exp.configVersionIds[1];
     const tvs = await this.taskVersions.find({ where: { id: In(exp.taskVersionIds) } });
     const tagOf = new Map(tvs.map((t) => [t.taskId, t.spec.tags ?? []]));
+    const list = (s?: string) => (s ?? '').split(',').map((x) => x.trim()).filter(Boolean);
+    const keep = list(tag);
+    const drop = list(excludeTag);
     const trials = (await this.trials.find({ where: { experimentId: id, configVersionId: In([A, B]), scored: true } }))
-      .filter((t) => (!tag || tagOf.get(t.taskId)?.includes(tag)) && (!excludeTag || !tagOf.get(t.taskId)?.includes(excludeTag)));
+      .filter((t) => {
+        const tags = tagOf.get(t.taskId) ?? [];
+        return (!keep.length || keep.some((k) => tags.includes(k))) && !drop.some((d) => tags.includes(d));
+      });
 
     const infra = (cv: string) => trials.filter((t) => t.configVersionId === cv && t.status !== 'done' && t.status !== 'queued' && t.status !== 'running' && t.status !== 'cancelled').length;
     const total = (cv: string) => trials.filter((t) => t.configVersionId === cv).length;

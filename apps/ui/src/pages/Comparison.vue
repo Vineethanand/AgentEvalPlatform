@@ -5,11 +5,15 @@ import { API, api, pct, pts, post, usd } from '../api';
 const props = defineProps<{ id: string }>();
 const detail = ref<any>(null);
 const cmp = ref<any>(null);
-const filter = ref<'all' | 'memory' | 'control'>('all');
+const filter = ref<'all' | 'memory' | 'control' | 'file' | 'reply'>('all');
 let timer: number | undefined;
 
 async function load() {
-  const q = filter.value === 'memory' ? '?tag=memory' : filter.value === 'control' ? '?excludeTag=memory' : '';
+  const queries: Record<string, string> = {
+    all: '', memory: '?tag=memory', control: '?excludeTag=memory',
+    file: '?tag=file-edit', reply: '?excludeTag=memory,file-edit',
+  };
+  const q = queries[filter.value];
   [detail.value, cmp.value] = await Promise.all([api(`/experiments/${props.id}`), api(`/experiments/${props.id}/comparison${q}`)]);
   if (['done', 'incomplete', 'cancelled'].includes(detail.value.experiment.status)) clearInterval(timer);
 }
@@ -83,6 +87,8 @@ const categories = computed(() => [...new Set([...Object.keys(cmp.value?.failure
         <option value="all">all scored tasks</option>
         <option value="memory">memory tasks only</option>
         <option value="control">all except memory tasks</option>
+        <option value="file">file-edit tasks only</option>
+        <option value="reply">reply-only tasks (no memory, no file edits)</option>
       </select>
       · <a :href="`${API}/experiments/${id}/export?format=csv`">Export CSV</a>
       · <a :href="`${API}/experiments/${id}/export?format=json`">Export JSON</a>

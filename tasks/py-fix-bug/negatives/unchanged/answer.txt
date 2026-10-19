@@ -1,8 +1,0 @@
-```python
-def days_between(start: str, end: str) -> int:
-    """Whole days from start to end (ISO 'YYYY-MM-DD')."""
-    sy, sm, sd = (int(x) for x in start.split("-"))
-    ey, em, ed = (int(x) for x in end.split("-"))
-    # BUG: treats every month as 30 days and every year as 360 days
-    return (ey - sy) * 360 + (em - sm) * 30 + (ed - sd)
-```

@@ -1,0 +1,11 @@
+id: env-file-update
+title: Update a settings file in place
+prompt: |
+  In settings.env, set DEBUG to false, change PORT to 9090, and add a new last line LOG_LEVEL=warn. Keep every
+  other line, including the comment, exactly as it is. Edit the file in place.
+tags: [files, file-edit, control]
+timeout_s: 300
+graders:
+  - type: state_check
+    primary: true
+    script: grader/check.py

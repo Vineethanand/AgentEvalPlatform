@@ -1,0 +1,12 @@
+id: meeting-slots
+title: Find a common free meeting slot
+prompt: |
+  calendars.json lists when three people are busy on the same day. Working hours are 09:00 to 17:00. Find the
+  earliest time at which a 60-minute meeting fits when all three are free (a meeting may start the moment
+  someone's busy block ends). Reply with only the slot as HH:MM-HH:MM. Do not write any files.
+tags: [tool-use, data, reasoning]
+timeout_s: 300
+graders:
+  - type: state_check
+    primary: true
+    script: grader/check.py

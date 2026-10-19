@@ -1,0 +1,11 @@
+id: changelog-house-format
+title: Write a changelog entry in the house format
+prompt: |
+  notes.txt lists the changes merged for release 3.2.0, which was released on 2025-03-14. Write the
+  changelog entry for this release in our house format. Reply with only the entry. Do not write any files.
+tags: [skill, writing-format]
+timeout_s: 300
+graders:
+  - type: state_check
+    primary: true
+    script: grader/check.py

@@ -1,0 +1,12 @@
+## 3.2.0 (2025-03-14)
+
+### Fixed
+- Wrong totals on refunds (#104)
+- Crash when config is empty (#98)
+
+### Added
+- Add dark mode (#107)
+- Add CSV export (#101)
+
+### Changed
+- Default timeout is now 30s (#110)

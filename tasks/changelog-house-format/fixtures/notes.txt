@@ -1,0 +1,6 @@
+feat: add CSV export (PR 101)
+fix: crash when config is empty (PR 98)
+fix: wrong totals on refunds (PR 104)
+chore: bump dependencies (PR 99)
+feat: add dark mode (PR 107)
+change: default timeout is now 30s (PR 110)

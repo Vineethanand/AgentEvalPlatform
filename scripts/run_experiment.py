@@ -31,9 +31,9 @@ API = os.environ.get("API_URL", "http://localhost:3000").rstrip("/")
 BASE_SETTINGS = {
     "temperature": 0.7, "max_steps": 25, "max_tokens_total": 200000, "timeout_s": 600,
     "tools": ["bash", "read_file", "write_file", "list_dir"],
-    "skills": ["invoice-format"], "memory": {"mode": "off"},
+    "skills": ["invoice-format", "changelog-format"], "memory": {"mode": "off"},
 }
-MEMORY_TASKS = ["m1-teach-units", "m1-use-units", "m2-teach-checks", "m2-use-checks"]
+MEMORY_TASKS = ["m1-teach-units", "m1-use-units", "m2-teach-checks", "m2-use-checks", "m3-teach-ids", "m3-use-ids"]
 
 
 def call(method: str, path: str, body=None):

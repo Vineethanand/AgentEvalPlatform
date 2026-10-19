@@ -1,0 +1,17 @@
+id: m3-teach-ids
+title: "Memory chain M3, step 1 (teach): state a ticket id format"
+prompt: |
+  Quick note about how I like things: whenever you write a ticket id for me, use the form TKT- followed by
+  the number padded with zeros to exactly five digits, and never a bare number. Please remember this for
+  future tasks. For now, just write ticket 42 in that form and reply with it.
+tags: [memory]
+scored: false
+chain: m3
+chain_order: 1
+timeout_s: 300
+graders:
+  - type: exact_match
+    primary: true
+    expected: "TKT-00042"
+    mode: contains
+    normalize: [trim, lower]

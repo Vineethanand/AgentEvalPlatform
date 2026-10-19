@@ -1,0 +1,7 @@
+## Release 3.2.0 - 2025-03-14
+
+- feat: add CSV export (PR 101)
+- fix: crash when config is empty (PR 98)
+- fix: wrong totals on refunds (PR 104)
+- feat: add dark mode (PR 107)
+- change: default timeout is now 30s (PR 110)

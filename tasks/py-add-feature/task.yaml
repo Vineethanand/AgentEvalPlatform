@@ -1,0 +1,12 @@
+id: py-add-feature
+title: Implement slugify in a text helper
+prompt: |
+  textutil.py has a stub for slugify(text). Implement it: lower-case the text, replace every run of
+  characters that are not letters or digits with a single hyphen, strip hyphens from both ends, and return
+  "untitled" if nothing is left. Edit textutil.py in place and keep word_count as it is.
+tags: [coding, file-edit]
+timeout_s: 400
+graders:
+  - type: unit_test
+    primary: true
+    tests: grader/tests
