@@ -99,7 +99,9 @@ class Runner:
         ctx.dump(ctx_path)
 
         t0 = time.time()
-        outcome = self.sandbox.run(config["harness"], ctx_path, workspace, timeout_s)
+        # A carry chain shares one memory home that lives outside this trial's folder: mount just that too.
+        shared = () if home.resolve().is_relative_to(tdir.resolve()) else (home,)
+        outcome = self.sandbox.run(config["harness"], ctx_path, workspace, timeout_s, extra_rw=shared)
         latency_ms = int((time.time() - t0) * 1000)
 
         result = _read_json(tdir / "result.json") or {}

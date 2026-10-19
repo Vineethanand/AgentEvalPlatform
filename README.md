@@ -182,6 +182,10 @@ Not yet verified:
 Simplifications versus the design document:
 - Graders run in the worker process, not a separate container.
 - Trace events are posted after the trial finishes rather than streamed.
-- Sandboxes mount the shared trials volume, so a sandbox could in principle read other trials' folders.
-- 12 scored tasks (+2 unscored teach tasks), not 24. The task format makes adding more a matter of adding folders.
+- 21 scored tasks (+3 unscored teach tasks), covering exact_match, state_check, unit_test, trace_check and llm_judge
+  graders. Several tasks only tell configs apart when a skill or memory is on (see `tasks/README.md`).
+
+Isolation: each trial runs in its own container that mounts only that trial's folder (and, in a "carry" memory
+chain, the shared memory home), not the whole trials volume. One trial cannot read or change another's files;
+state carries between trials only when a memory setting says so.
 - Tables are created by TypeORM `synchronize`; production use would need migrations.

@@ -1,5 +1,5 @@
 bullmq>=2.11,<3
 requests>=2.31
 PyYAML>=6.0
-docker>=7.1
+docker>=7.2
 pytest>=8.0

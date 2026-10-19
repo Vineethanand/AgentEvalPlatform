@@ -1,0 +1,8 @@
+# Everything needed to run the Python tests and scripts from the repo root:
+#   pip install -r requirements.txt
+#   cd workers && python -m pytest -q       # worker tests
+#   python scripts/validate_tasks.py        # grader checks
+#   python scripts/run_experiment.py ...    # experiment launcher
+#
+# The API's tests are JavaScript: cd apps/api && npm install && npm test
+-r workers/requirements.txt
