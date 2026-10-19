@@ -74,6 +74,9 @@ const summary = (e: any) => {
       <div v-for="g in data.grades" :key="g.id" style="margin-bottom: 10px">
         <strong>{{ g.grader }}{{ g.primary ? ' (primary)' : '' }}</strong>:
         <span :class="g.passed ? 'good' : 'bad'">{{ g.passed ? 'pass' : 'fail' }}</span> · score {{ g.score.toFixed(2) }}
+        <p v-if="g.raw.ungraded" class="bad">⚠ Not graded: the judge could not be run, so this fail is not a verdict on the answer.
+          <span class="muted">{{ g.reasoning }}</span></p>
+        <p v-else-if="g.raw.grader_error" class="bad">⚠ Grader error: <span class="muted">{{ g.reasoning }}</span></p>
         <ul><li v-for="c in g.raw.checks ?? []" :key="c.name" :class="c.passed ? 'good' : 'bad'">
           {{ c.passed ? '✓' : '✗' }} {{ c.name }} <span class="muted">{{ c.detail }}</span></li></ul>
       </div>

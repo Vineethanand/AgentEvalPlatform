@@ -112,6 +112,10 @@ class Runner:
                         "out": float(os.environ.get("JUDGE_PRICE_OUT", 1.6))}
         task_for_grading = {**task, "graders": [{**g, "_judge_prices": judge_prices} for g in task.get("graders", [])]}
         grades = grade_all(GradeInput(task_for_grading, task_dir, workspace, final_answer, events))
+        for g in grades:   # a grader that could not run is a fail that says nothing about the answer: make it loud
+            if (g.get("raw") or {}).get("ungraded") or (g.get("raw") or {}).get("grader_error"):
+                log.warning("task %s: %s grader did not produce a verdict: %s", task["id"], g["grader"],
+                            g.get("reasoning"))
         p = primary(grades)
         return grades, bool(p and p["passed"])
 
