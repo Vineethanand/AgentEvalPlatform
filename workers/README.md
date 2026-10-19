@@ -18,7 +18,9 @@ python -m pytest -q                # tests: fake model server, no keys or Docker
 | `INTERNAL_TOKEN` | | Shared secret for the API's internal endpoints |
 | `SANDBOX_MODE` | `local` | `docker` = one container per trial; `local` = subprocess |
 | `TASKS_DIR` / `TRIALS_DIR` | `../tasks` / `./data/trials` | Task definitions / per-trial working folders |
-| `JUDGE_MODEL` | `gpt-judge` | Gateway alias of the LLM judge |
+| `JUDGE_MODEL` | `gpt-judge` | Gateway alias of the LLM judge (when `JUDGE_BACKEND=gateway`) |
+| `JUDGE_BACKEND` | `gateway` | `claude-cli` = judge through the `claude` CLI (Claude Code), no gateway |
+| `JUDGE_CLI_MODEL` | `haiku` | Claude model used when the backend is `claude-cli` |
 | `KEEP_TRIAL_FILES` | | `1` keeps each trial's workspace for debugging |
 
 ## Layout

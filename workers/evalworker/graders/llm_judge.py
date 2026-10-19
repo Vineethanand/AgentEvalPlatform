@@ -5,8 +5,9 @@ Design choices (see docs/design.md, "LLM judge"):
 - The judge sees the task, rubric, final answer and the files the agent produced.
   It does NOT see the agent's reasoning, so it can't be talked into a pass.
 - For each criterion it writes a reason BEFORE the verdict.
-- Temperature 0; the judge model is a gateway alias (JUDGE_MODEL), ideally from a
-  different provider than the agent models.
+- Backend: the gateway (default; model = alias in JUDGE_MODEL, temperature 0) or the `claude` CLI
+  (JUDGE_BACKEND=claude-cli, or `backend: claude-cli` on the task's grader; model = JUDGE_CLI_MODEL, default haiku).
+  Use one judge for a whole experiment, ideally from a different provider than the agent models.
 """
 from __future__ import annotations
 
@@ -17,6 +18,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from ..adapters.llm import LLMError, chat
+from . import claude_cli
 
 if TYPE_CHECKING:
     from . import GradeInput
@@ -71,18 +73,24 @@ def llm_judge(inp: "GradeInput", spec: dict[str, Any]) -> dict[str, Any]:
         task=inp.task["prompt"], answer=inp.final_answer or "(empty)",
         files=_files_snapshot(inp.workspace, spec.get("files")), rubric=rubric_text,
     )
-    model = spec.get("model") or os.environ.get("JUDGE_MODEL", "gpt-judge")
+    backend = spec.get("backend") or os.environ.get("JUDGE_BACKEND", "gateway")
+    use_cli = backend == "claude-cli"
+    model = (spec.get("model") or os.environ.get("JUDGE_CLI_MODEL", "haiku")) if use_cli         else spec.get("model") or os.environ.get("JUDGE_MODEL", "gpt-judge")
     base = os.environ.get("GATEWAY_URL", "http://localhost:4000")
     key = os.environ.get("LITELLM_MASTER_KEY", "")
     prices = spec.get("_judge_prices") or {}
     cost, last_err = 0.0, None
     for _ in range(3):  # retry malformed JSON
         try:
-            resp = chat(base, key, model, [{"role": "user", "content": prompt}], temperature=0.0)
-        except LLMError as e:
+            if use_cli:
+                text, u = claude_cli.ask(prompt, model)
+                resp = {"choices": [{"message": {"content": text}}]}
+            else:
+                resp = chat(base, key, model, [{"role": "user", "content": prompt}], temperature=0.0)
+                u = resp.get("usage") or {}
+        except (LLMError, claude_cli.CliJudgeError) as e:
             last_err = e
             continue
-        u = resp.get("usage") or {}
         cost += (u.get("prompt_tokens", 0) * prices.get("in", 0) + u.get("completion_tokens", 0) * prices.get("out", 0)) / 1e6
         try:
             verdicts = {c["id"]: c for c in _parse(resp["choices"][0]["message"]["content"])["criteria"]}
@@ -104,6 +112,6 @@ def llm_judge(inp: "GradeInput", spec: dict[str, Any]) -> dict[str, Any]:
         "score": sum(c["passed"] for c in checks) / len(checks),
         "passed": passed,
         "reasoning": "; ".join(f"{c['name']}={'yes' if c['passed'] else 'no'}: {c['detail']}" for c in checks),
-        "raw": {"checks": checks, "judge_model": model},
+        "raw": {"checks": checks, "judge_model": model, "judge_backend": backend},
         "judgeCostUsd": cost,
     }

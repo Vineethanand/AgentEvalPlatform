@@ -133,6 +133,10 @@ the verdict is withheld until you `POST /experiments/:id/resume`.
 | Hermes | Free OpenRouter models (`laguna-xs-free`, `inkling-small-free`) | Works, but the free tier's daily request limit (50/day) was hit after only a few experiments. `inkling-small-free` is also refused by OpenRouter outside its approved agentic harnesses |
 | Hermes | Local Ollama: `qwen2.5:1.5b` (`ollama-qwen-1.5b`) and `qwen2.5:3b` (`ollama-qwen-3b`), plus `qwen2.5:7b` (`ollama-qwen`) | Runs end to end through the gateway. This confirms the Hermes harness itself works; see the local-model notes below for the quality limits |
 
+Assumption: the LLM judge can run through the Claude Code CLI with Haiku (`JUDGE_BACKEND=claude-cli`), since the
+Claude Code credentials work and the gateway judge model has no API credit behind it. Judge calls on that path use the
+subscription token, so their cost is not reported in the gateway spend totals.
+
 Assumption: Claude Code credentials are available and Haiku was run through the Claude Code harness. To run Hermes with
 Claude or OpenAI models you would need API credit on those accounts. Anthropic API keys also need
 `anthropic-workspace-id` set on the model in `gateway/litellm_config.yaml`.
@@ -161,6 +165,12 @@ known-bad answers that `scripts/validate_tasks.py` checks):
 - **`tile-defect`**: find the one wrong pixel in a 32×32 image made of a repeating 4×4 tile, and report its row, column
   and tile.
 - **`job-schedule`**: order 20 batch jobs by finish time across different UTC offsets and report peak concurrency.
+
+LLM judge backend: by default the judge calls a gateway alias (`JUDGE_MODEL`, `gpt-judge`), which needs OpenAI credit.
+Set `JUDGE_BACKEND=claude-cli` in `.env` to judge with Claude Code Haiku instead (`JUDGE_CLI_MODEL`, default `haiku`).
+A task can also pick it with `backend: claude-cli` on its `llm_judge` grader. It is a worker-wide setting rather than
+a UI option, so every config in an experiment is judged by the same model. In Docker the judge runs in a throwaway
+claude-code container with no mounted files; locally it needs `claude` on the PATH.
 
 LLM-judge calibration: manual labels for `postmortem-from-logs` are in `tasks/postmortem-from-logs/labels/`, and
 `scripts/calibrate_judge.py` compares the judge against them (see `docs/README.md`).
