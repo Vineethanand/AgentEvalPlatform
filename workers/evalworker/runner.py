@@ -60,6 +60,8 @@ class Runner:
             return
         attempt = started["attempt"]
         trial, task, config = spec["trial"], spec["task"], spec["config"]
+        log.info("trial %s started: task %s, trial index %s, attempt %s, %s / %s", trial_id, task["id"],
+                 trial.get("trialIndex"), attempt, config.get("harness"), config.get("modelAlias"))
         settings = config["settings"]
         task_dir = self.tasks_dir / task["id"]
 
@@ -142,6 +144,7 @@ class Runner:
             "failureCategory": category,
             "grades": [{k: v for k, v in g.items()} for g in grades],
         })
+        log.info("trial %s finished: %s, %s", trial_id, status, "PASS" if passed else "FAIL")
         if key:
             self.gw.delete_key(key)
         if os.environ.get("KEEP_TRIAL_FILES") != "1":

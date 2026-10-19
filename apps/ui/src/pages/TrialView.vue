@@ -53,6 +53,8 @@ const summary = (e: any) => {
 
     <div class="panel">
       <table>
+        <tr><th>Trial ID</th><td><code style="user-select: all">{{ data.trial.id }}</code>
+          <span class="muted"> · as in the worker's Docker logs (attempt {{ data.trial.attempt ?? 1 }})</span></td></tr>
         <tr><th>Config</th><td>{{ data.configVersion.harness }} · {{ data.configVersion.modelAlias }} · memory {{ data.configVersion.settings.memory?.mode }} (v{{ data.configVersion.version }})</td></tr>
         <tr><th>Result</th>
           <td v-if="pending" class="running">{{ data.trial.status }} · in progress

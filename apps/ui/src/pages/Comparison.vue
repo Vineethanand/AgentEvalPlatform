@@ -157,7 +157,7 @@ const categories = computed(() => [...new Set([...Object.keys(cmp.value?.failure
         <tr v-for="(byCfg, taskId) in grid" :key="taskId">
           <td>{{ taskId }}</td>
           <td v-for="cv in detail.experiment.configVersionIds" :key="cv">
-            <RouterLink v-for="t in byCfg[cv] ?? []" :key="t.id" :to="`/trials/${t.id}`" :title="`trial ${t.trialIndex}: ${t.status}${t.failureCategory ? ' · ' + t.failureCategory : ''}`">
+            <RouterLink v-for="t in byCfg[cv] ?? []" :key="t.id" :to="`/trials/${t.id}`" :title="`trial ${t.trialIndex} (${t.id}): ${t.status}${t.failureCategory ? ' · ' + t.failureCategory : ''}`">
               <span class="dot" :style="{ background: dotColor(t) }"></span>
             </RouterLink>
           </td>
