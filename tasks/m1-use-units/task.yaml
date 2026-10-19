@@ -1,9 +1,9 @@
 id: m1-use-units
-title: "Memory chain M1, step 2 (use): apply the remembered preference"
+title: "Memory chain M1, step 2 (use): apply the remembered unit and conversion"
 prompt: |
   trips.csv has this week's delivery trips with distances in miles. Reply with one line: the total
-  distance for the week, in my preferred format. Give the total in that one unit only: do not mention
-  or convert to any other unit, including miles. Do not write any files.
+  distance for the week, in my preferred unit and format. Give the total in that one unit only: do not
+  mention or convert to any other unit, including miles. Do not write any files.
 tags: [memory]
 chain: m1
 chain_order: 2

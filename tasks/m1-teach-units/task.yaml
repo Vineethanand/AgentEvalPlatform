@@ -1,9 +1,11 @@
 id: m1-teach-units
-title: "Memory chain M1, step 1 (teach): state a preference"
+title: "Memory chain M1, step 1 (teach): a custom distance unit"
 prompt: |
-  Quick note about how I like things: in every report you write for me, give distances in
-  kilometres with exactly one decimal place, never miles. Please remember this for future tasks.
-  For now, just convert 26.2 miles to kilometres and reply with the number.
+  Quick note about how I like things: in every report you write for me, give distances in "dodos", a unit
+  I use. To convert a distance of x miles, dodos = sqrt(x) + 56 * ln(x), where ln is the natural logarithm.
+  Always convert the total distance, never individual trips, and give exactly one decimal place. Never use
+  miles. Please remember this for future tasks. For now, just convert 26.2 miles to dodos and reply with
+  the number.
 tags: [memory]
 scored: false
 chain: m1
@@ -12,5 +14,5 @@ timeout_s: 300
 graders:
   - type: exact_match
     primary: true
-    expected: "42.2"
+    expected: "188.0"
     mode: contains

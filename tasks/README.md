@@ -62,7 +62,7 @@ graders:
 | config-migrate | files | state_check | control; file-edit |
 | unanswerable-from-docs | reasoning | exact_match ("cannot determine") | hallucination |
 | invoice-house-format | skill | state_check | skill: the format exists only in the `invoice-format` skill; file-edit |
-| m1-teach-units → m1-use-units | memory chain | state_check | memory: a stated preference (km, one decimal) |
+| m1-teach-units → m1-use-units | memory chain | state_check | memory: a custom unit (dodos = sqrt(x) + 56 * ln(x) of the total miles) given only in the teach task |
 | m2-teach-checks → m2-use-checks | memory chain | trace_check | memory: the teach task is told to run a custom suite (`qa/run_suite.py --suite=nightly-4`); the use task only says "run the checks you ran last time", with no path, flag or expected result |
 | postmortem-from-logs | writing | llm_judge (rubric) | open-ended output |
 | tile-defect | data | state_check | control: find the one wrong pixel in a repeating tile |
