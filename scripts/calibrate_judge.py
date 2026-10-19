@@ -9,7 +9,7 @@ and writes docs/judge-calibration.md.
 
 Needs the gateway (GATEWAY_URL, LITELLM_MASTER_KEY, JUDGE_MODEL), like validate_tasks.py --with-judge.
 
-Usage:  python scripts/calibrate_judge.py [task_id] [--reviewed-only]
+Usage:  python scripts/calibrate_judge.py [task_id]
 """
 from __future__ import annotations
 
@@ -40,7 +40,6 @@ def load_env() -> None:
 
 def main(argv: list[str]) -> int:
     load_env()
-    reviewed_only = "--reviewed-only" in argv
     ids = [a for a in argv if not a.startswith("--")] or ["postmortem-from-logs"]
     lines = [f"# Judge calibration\n\nRun {datetime.now(timezone.utc):%Y-%m-%d %H:%M} UTC.\n"]
     bad = 0
@@ -50,8 +49,6 @@ def main(argv: list[str]) -> int:
         spec = next(g for g in task["graders"] if g.get("primary"))
         must = {c["id"] for c in spec["rubric"] if c.get("must", True)}
         items = json.loads((task_dir / "labels" / "labels.json").read_text(encoding="utf-8"))
-        if reviewed_only:
-            items = [i for i in items if i.get("reviewed")]
         per = {c["id"]: [0, 0] for c in spec["rubric"]}     # [agree, total]
         overall = [0, 0]
         false_pass, false_fail, rows = [], [], []
@@ -79,20 +76,17 @@ def main(argv: list[str]) -> int:
                 false_pass.append(it["id"])
             if h_pass and not g["passed"]:
                 false_fail.append(it["id"])
-            rows.append((it["id"], h_pass, g["passed"], "; ".join(diff) or "-", bool(it.get("reviewed"))))
-        n_rev = sum(1 for it in items if it.get("reviewed"))
+            rows.append((it["id"], h_pass, g["passed"], "; ".join(diff) or "-"))
         pct = lambda a, b: f"{100 * a / b:.0f}% ({a}/{b})" if b else "n/a"
         lines += [f"## {tid}\n", f"Judge model: `{g['raw'].get('judge_model') if rows else '?'}`. "
-                  f"{len(items)} labelled answers, {n_rev} reviewed by a human.\n",
+                  f"{len(items)} answers with manual labels.\n",
                   f"- **Pass/fail agreement:** {pct(*overall)}",
                   f"- **False passes** (judge passed, labels fail): {len(false_pass)} {false_pass or ''}",
                   f"- **False fails** (judge failed, labels pass): {len(false_fail)} {false_fail or ''}\n",
                   "| Criterion | Agreement |", "|---|---|"]
         lines += [f"| {c} | {pct(*v)} |" for c, v in per.items()]
-        lines += ["", "| Answer | Labels pass | Judge pass | Disagreements | Reviewed |", "|---|---|---|---|---|"]
-        lines += [f"| {r[0]} | {r[1]} | {r[2]} | {r[3]} | {r[4]} |" for r in rows]
-        if n_rev < len(items):
-            lines.append("\n> Labels not yet reviewed by a human are drafts. Treat this as an estimate until every item is `reviewed`.")
+        lines += ["", "| Answer | Labels pass | Judge pass | Disagreements |", "|---|---|---|---|"]
+        lines += [f"| {r[0]} | {r[1]} | {r[2]} | {r[3]} |" for r in rows]
         print(f"{tid}: pass/fail agreement {pct(*overall)}, false passes {len(false_pass)}, false fails {len(false_fail)}")
         for c, v in per.items():
             print(f"  {c:14s} {pct(*v)}")

@@ -10,9 +10,7 @@
       "length": true,
       "headings": true
     },
-    "note": "Matches the logs on every point.",
-    "labeled_by": "claude (draft)",
-    "reviewed": true
+    "note": "Matches the logs on every point."
   },
   {
     "id": "good-paraphrase",
@@ -25,9 +23,7 @@
       "length": true,
       "headings": true
     },
-    "note": "Different wording, same facts, all sections present.",
-    "labeled_by": "claude (draft)",
-    "reviewed": true
+    "note": "Different wording, same facts, all sections present."
   },
   {
     "id": "wrong-times",
@@ -40,9 +36,7 @@
       "length": true,
       "headings": true
     },
-    "note": "Start and end times are wrong.",
-    "labeled_by": "claude (draft)",
-    "reviewed": true
+    "note": "Start and end times are wrong."
   },
   {
     "id": "wrong-cause-ddos",
@@ -55,9 +49,7 @@
       "length": true,
       "headings": true
     },
-    "note": "Wrong cause; the attack is invented.",
-    "labeled_by": "claude (draft)",
-    "reviewed": true
+    "note": "Wrong cause; the attack is invented."
   },
   {
     "id": "invented-numbers",
@@ -70,9 +62,7 @@
       "length": true,
       "headings": true
     },
-    "note": "Correct cause but invents a customer count and a deploy.",
-    "labeled_by": "claude (draft)",
-    "reviewed": true
+    "note": "Correct cause but invents a customer count and a deploy."
   },
   {
     "id": "no-actions",
@@ -85,9 +75,7 @@
       "length": true,
       "headings": true
     },
-    "note": "Actions section is empty.",
-    "labeled_by": "claude (draft)",
-    "reviewed": true
+    "note": "Actions section is empty."
   },
   {
     "id": "vague-action",
@@ -100,9 +88,7 @@
       "length": true,
       "headings": true
     },
-    "note": "Actions are not concrete.",
-    "labeled_by": "claude (draft)",
-    "reviewed": true
+    "note": "Actions are not concrete."
   },
   {
     "id": "no-headings",
@@ -115,9 +101,7 @@
       "length": true,
       "headings": true
     },
-    "note": "Facts right, but none of the four requested sections.",
-    "labeled_by": "claude (draft)",
-    "reviewed": true
+    "note": "Facts right, but none of the four requested sections."
   },
   {
     "id": "too-long",
@@ -130,9 +114,7 @@
       "length": false,
       "headings": true
     },
-    "note": "Over 300 words; facts are right.",
-    "labeled_by": "claude (draft)",
-    "reviewed": true
+    "note": "Over 300 words; facts are right."
   },
   {
     "id": "vague-cause",
@@ -145,9 +127,7 @@
       "length": true,
       "headings": true
     },
-    "note": "Does not name connection-pool exhaustion.",
-    "labeled_by": "claude (draft)",
-    "reviewed": true
+    "note": "Does not name connection-pool exhaustion."
   },
   {
     "id": "end-time-is-kill-time",
@@ -160,9 +140,7 @@
       "length": true,
       "headings": true
     },
-    "note": "Borderline: uses the time the export was killed as the end; the logs say recovery at 02:45.",
-    "labeled_by": "claude (draft)",
-    "reviewed": true
+    "note": "Borderline: uses the time the export was killed as the end; the logs say recovery at 02:45."
   },
   {
     "id": "extra-memory-leak",
@@ -175,9 +153,7 @@
       "length": true,
       "headings": true
     },
-    "note": "Adds a memory leak that is not in the logs.",
-    "labeled_by": "claude (draft)",
-    "reviewed": true
+    "note": "Adds a memory leak that is not in the logs."
   },
   {
     "id": "cannot-determine",
@@ -190,9 +166,7 @@
       "length": true,
       "headings": false
     },
-    "note": "Refuses; nothing to credit. No invention and short, so those hold.",
-    "labeled_by": "claude (draft)",
-    "reviewed": true
+    "note": "Refuses; nothing to credit. No invention and short, so those hold."
   },
   {
     "id": "good-terse",
@@ -205,8 +179,6 @@
       "length": true,
       "headings": true
     },
-    "note": "Very short but correct, with all four sections.",
-    "labeled_by": "claude (draft)",
-    "reviewed": true
+    "note": "Very short but correct, with all four sections."
   }
 ]
