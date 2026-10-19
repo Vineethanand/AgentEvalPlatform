@@ -1,0 +1,212 @@
+[
+  {
+    "id": "good-reference",
+    "answer": "# Postmortem: API outage\n## Summary\nThe API returned 503s from 02:10 to 02:45 UTC because the nightly export used up the DB connection pool.\n## Timeline\n- 02:09:58 export starts, opens 40 connections\n- 02:10:07 pool exhausted, API returns 503\n- 02:31 on-call paged\n- 02:42 export killed; 02:45 recovered\n## Root cause\nThe export job and the API share a 50-connection pool; the export took 40 of them.\n## Actions\n- Give the export its own capped pool (max 10).\n- Alert when the pool passes 80%.",
+    "labels": {
+      "times": true,
+      "root_cause": true,
+      "no_invention": true,
+      "action": true,
+      "length": true,
+      "headings": true
+    },
+    "note": "Matches the logs on every point.",
+    "labeled_by": "claude (draft)",
+    "reviewed": true
+  },
+  {
+    "id": "good-paraphrase",
+    "answer": "**Summary** Between 02:10 and 02:45 UTC the API was down (503s, 96% error rate at 02:14). The nightly export job had taken 40 of the 50 database connections, so the API could not get one.\n**Timeline** 02:09:58 export opens 40 connections. 02:10:07 pool exhausted, 503s start. 02:31:40 on-call paged. 02:42:10 export killed. 02:45 error rate back to 0%.\n**Root cause** The batch export and the API share one connection pool of 50; the export starved the API.\n**Actions** Cap the export at 10 connections and alert when the pool is above 80% full.",
+    "labels": {
+      "times": true,
+      "root_cause": true,
+      "no_invention": true,
+      "action": true,
+      "length": true,
+      "headings": true
+    },
+    "note": "Different wording, same facts, all sections present.",
+    "labeled_by": "claude (draft)",
+    "reviewed": true
+  },
+  {
+    "id": "wrong-times",
+    "answer": "# Postmortem: API outage\n## Summary\nThe API returned 503s from 01:50 to 03:10 UTC because the nightly export used up the DB connection pool.\n## Timeline\n- 02:09:58 export starts, opens 40 connections\n- 01:50:07 pool exhausted, API returns 503\n- 02:31 on-call paged\n- 02:42 export killed; 03:10 recovered\n## Root cause\nThe export job and the API share a 50-connection pool; the export took 40 of them.\n## Actions\n- Give the export its own capped pool (max 10).\n- Alert when the pool passes 80%.",
+    "labels": {
+      "times": false,
+      "root_cause": true,
+      "no_invention": true,
+      "action": true,
+      "length": true,
+      "headings": true
+    },
+    "note": "Start and end times are wrong.",
+    "labeled_by": "claude (draft)",
+    "reviewed": true
+  },
+  {
+    "id": "wrong-cause-ddos",
+    "answer": "## Summary\nThe API was down from 02:10 to 02:45 UTC after a DDoS attack from an unknown source flooded the load balancer.\n## Timeline\n- 02:10 traffic spike, 503s\n- 02:45 attack subsided\n## Root cause\nA distributed denial-of-service attack saturated the network.\n## Actions\n- Put a CDN with DDoS protection in front of the API.",
+    "labels": {
+      "times": true,
+      "root_cause": false,
+      "no_invention": false,
+      "action": true,
+      "length": true,
+      "headings": true
+    },
+    "note": "Wrong cause; the attack is invented.",
+    "labeled_by": "claude (draft)",
+    "reviewed": true
+  },
+  {
+    "id": "invented-numbers",
+    "answer": "# Postmortem: API outage\n## Summary\nThe API returned 503s from 02:10 to 02:45 UTC because the nightly export used up the DB connection pool.\n## Timeline\n- 02:09:58 export starts, opens 40 connections\n- 02:10:07 pool exhausted, API returns 503\n- 02:31 on-call paged\n- 02:42 export killed; 02:45 recovered\n## Root cause\nThe export job, which affected about 12,000 customers and followed the v2.3 deploy at 01:30, and the API share a 50-connection pool; the export took 40 of them.\n## Actions\n- Give the export its own capped pool (max 10).\n- Alert when the pool passes 80%.",
+    "labels": {
+      "times": true,
+      "root_cause": true,
+      "no_invention": false,
+      "action": true,
+      "length": true,
+      "headings": true
+    },
+    "note": "Correct cause but invents a customer count and a deploy.",
+    "labeled_by": "claude (draft)",
+    "reviewed": true
+  },
+  {
+    "id": "no-actions",
+    "answer": "# Postmortem: API outage\n## Summary\nThe API returned 503s from 02:10 to 02:45 UTC because the nightly export used up the DB connection pool.\n## Timeline\n- 02:09:58 export starts, opens 40 connections\n- 02:10:07 pool exhausted, API returns 503\n- 02:31 on-call paged\n- 02:42 export killed; 02:45 recovered\n## Root cause\nThe export job and the API share a 50-connection pool; the export took 40 of them.\n## Actions\n(none)",
+    "labels": {
+      "times": true,
+      "root_cause": true,
+      "no_invention": true,
+      "action": false,
+      "length": true,
+      "headings": true
+    },
+    "note": "Actions section is empty.",
+    "labeled_by": "claude (draft)",
+    "reviewed": true
+  },
+  {
+    "id": "vague-action",
+    "answer": "# Postmortem: API outage\n## Summary\nThe API returned 503s from 02:10 to 02:45 UTC because the nightly export used up the DB connection pool.\n## Timeline\n- 02:09:58 export starts, opens 40 connections\n- 02:10:07 pool exhausted, API returns 503\n- 02:31 on-call paged\n- 02:42 export killed; 02:45 recovered\n## Root cause\nThe export job and the API share a 50-connection pool; the export took 40 of them.\n## Actions\n- Be more careful.\n- Improve things.",
+    "labels": {
+      "times": true,
+      "root_cause": true,
+      "no_invention": true,
+      "action": false,
+      "length": true,
+      "headings": true
+    },
+    "note": "Actions are not concrete.",
+    "labeled_by": "claude (draft)",
+    "reviewed": true
+  },
+  {
+    "id": "no-headings",
+    "answer": "The API returned 503s from 02:10 to 02:45 UTC because the nightly export used up the DB connection pool. The export opened 40 of the 50 connections at 02:09:58, the pool was exhausted at 02:10:07, on-call was paged at 02:31 and killed the export at 02:42. To stop a repeat, give the export its own capped pool of 10 connections and alert when the pool passes 80%.",
+    "labels": {
+      "times": true,
+      "root_cause": true,
+      "no_invention": true,
+      "action": true,
+      "length": true,
+      "headings": true
+    },
+    "note": "Facts right, but none of the four requested sections.",
+    "labeled_by": "claude (draft)",
+    "reviewed": true
+  },
+  {
+    "id": "too-long",
+    "answer": "# Postmortem: API outage\n## Summary\nThe API returned 503s from 02:10 to 02:45 UTC because the nightly export used up the DB connection pool.\n## Timeline\n- 02:09:58 export starts, opens 40 connections\n- 02:10:07 pool exhausted, API returns 503\n- 02:31 on-call paged\n- 02:42 export killed; 02:45 recovered\n## Detail\nDuring the incident the API kept answering clients with 503 errors while the database connection pool stayed exhausted and the on-call engineer worked through the alerts until the export job was stopped and traffic recovered. During the incident the API kept answering clients with 503 errors while the database connection pool stayed exhausted and the on-call engineer worked through the alerts until the export job was stopped and traffic recovered. During the incident the API kept answering clients with 503 errors while the database connection pool stayed exhausted and the on-call engineer worked through the alerts until the export job was stopped and traffic recovered. During the incident the API kept answering clients with 503 errors while the database connection pool stayed exhausted and the on-call engineer worked through the alerts until the export job was stopped and traffic recovered. During the incident the API kept answering clients with 503 errors while the database connection pool stayed exhausted and the on-call engineer worked through the alerts until the export job was stopped and traffic recovered. During the incident the API kept answering clients with 503 errors while the database connection pool stayed exhausted and the on-call engineer worked through the alerts until the export job was stopped and traffic recovered. During the incident the API kept answering clients with 503 errors while the database connection pool stayed exhausted and the on-call engineer worked through the alerts until the export job was stopped and traffic recovered. During the incident the API kept answering clients with 503 errors while the database connection pool stayed exhausted and the on-call engineer worked through the alerts until the export job was stopped and traffic recovered. During the incident the API kept answering clients with 503 errors while the database connection pool stayed exhausted and the on-call engineer worked through the alerts until the export job was stopped and traffic recovered.\n## Root cause\nThe export job and the API share a 50-connection pool; the export took 40 of them.\n## Actions\n- Give the export its own capped pool (max 10).\n- Alert when the pool passes 80%.",
+    "labels": {
+      "times": true,
+      "root_cause": true,
+      "no_invention": true,
+      "action": true,
+      "length": false,
+      "headings": true
+    },
+    "note": "Over 300 words; facts are right.",
+    "labeled_by": "claude (draft)",
+    "reviewed": true
+  },
+  {
+    "id": "vague-cause",
+    "answer": "# Postmortem: API outage\n## Summary\nThe API returned 503s from 02:10 to 02:45 UTC because the nightly export used up the DB connection pool.\n## Timeline\n- 02:09:58 export starts, opens 40 connections\n- 02:10:07 pool exhausted, API returns 503\n- 02:31 on-call paged\n- 02:42 export killed; 02:45 recovered\n## Root cause\nThe database became slow and overloaded.\n## Actions\n- Give the export its own capped pool (max 10).\n- Alert when the pool passes 80%.",
+    "labels": {
+      "times": true,
+      "root_cause": false,
+      "no_invention": true,
+      "action": true,
+      "length": true,
+      "headings": true
+    },
+    "note": "Does not name connection-pool exhaustion.",
+    "labeled_by": "claude (draft)",
+    "reviewed": true
+  },
+  {
+    "id": "end-time-is-kill-time",
+    "answer": "# Postmortem: API outage\n## Summary\nThe API returned 503s from 02:10 to 02:42 UTC because the nightly export used up the DB connection pool.\n## Timeline\n- 02:09:58 export starts, opens 40 connections\n- 02:10:07 pool exhausted, API returns 503\n- 02:31 on-call paged\n- 02:42 export killed; 02:45 recovered\n## Root cause\nThe export job and the API share a 50-connection pool; the export took 40 of them.\n## Actions\n- Give the export its own capped pool (max 10).\n- Alert when the pool passes 80%.",
+    "labels": {
+      "times": false,
+      "root_cause": true,
+      "no_invention": true,
+      "action": true,
+      "length": true,
+      "headings": true
+    },
+    "note": "Borderline: uses the time the export was killed as the end; the logs say recovery at 02:45.",
+    "labeled_by": "claude (draft)",
+    "reviewed": true
+  },
+  {
+    "id": "extra-memory-leak",
+    "answer": "# Postmortem: API outage\n## Summary\nThe API returned 503s from 02:10 to 02:45 UTC because the nightly export used up the DB connection pool.\n## Timeline\n- 02:09:58 export starts, opens 40 connections\n- 02:10:07 pool exhausted, API returns 503\n- 02:31 on-call paged\n- 02:42 export killed; 02:45 recovered\n## Root cause\nThe export job and the API share a 50-connection pool; the export took 40 of them.\nThe API also had a memory leak that made things worse.\n## Actions\n- Give the export its own capped pool (max 10).\n- Alert when the pool passes 80%.",
+    "labels": {
+      "times": true,
+      "root_cause": true,
+      "no_invention": false,
+      "action": true,
+      "length": true,
+      "headings": true
+    },
+    "note": "Adds a memory leak that is not in the logs.",
+    "labeled_by": "claude (draft)",
+    "reviewed": true
+  },
+  {
+    "id": "cannot-determine",
+    "answer": "I cannot tell what happened from these logs.",
+    "labels": {
+      "times": false,
+      "root_cause": false,
+      "no_invention": true,
+      "action": false,
+      "length": true,
+      "headings": false
+    },
+    "note": "Refuses; nothing to credit. No invention and short, so those hold.",
+    "labeled_by": "claude (draft)",
+    "reviewed": true
+  },
+  {
+    "id": "good-terse",
+    "answer": "Summary: 503s from 02:10 to 02:45 UTC.\nTimeline: 02:09:58 export opens 40 connections; 02:10:07 pool exhausted; 02:42 export killed; 02:45 recovered.\nRoot cause: the nightly export exhausted the shared DB connection pool.\nActions: cap the export's connections; alert at 80% pool use.",
+    "labels": {
+      "times": true,
+      "root_cause": true,
+      "no_invention": true,
+      "action": true,
+      "length": true,
+      "headings": true
+    },
+    "note": "Very short but correct, with all four sections.",
+    "labeled_by": "claude (draft)",
+    "reviewed": true
+  }
+]

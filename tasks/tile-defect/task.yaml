@@ -1,0 +1,14 @@
+id: tile-defect
+title: Find the defective pixel in a repeating 4x4 tile image
+prompt: |
+  image.csv in your workspace is a 32x32 grey-scale image, one row per line, values 0-255. The whole
+  image is the same 4x4 tile repeated 8 times across and 8 times down, except for exactly one pixel
+  whose value is wrong. Find it. Reply with only a JSON object with the pixel's zero-based "row" and
+  "col" in the image, and the zero-based "tile_row" and "tile_col" of the 4x4 tile that contains it
+  (each 0-7). Do not write any files.
+tags: [tool-use, data, perception]
+timeout_s: 600
+graders:
+  - type: state_check
+    primary: true
+    script: grader/check.py

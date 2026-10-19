@@ -1,0 +1,14 @@
+id: job-schedule
+title: Order jobs by finish time across time zones
+prompt: |
+  jobs.csv in your workspace lists 20 batch jobs with the time each one started and finished. The
+  timestamps are ISO 8601 and carry different UTC offsets, so compare them as instants, not as text.
+  Reply with only a JSON object with two keys: "order", the 20 job ids sorted by finish time
+  (earliest first), and "peak_concurrency", the largest number of jobs that were running at the same
+  moment (a job that finishes at the instant another starts does not overlap it). Do not write any files.
+tags: [tool-use, data, reasoning]
+timeout_s: 1200
+graders:
+  - type: state_check
+    primary: true
+    script: grader/check.py
